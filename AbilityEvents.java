@@ -7,6 +7,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import com.example.examplemod.abilitySet.PlayerStateSnapshot; // 새로 만든 클래스 import
+import java.util.ArrayDeque;
+import java.util.Deque;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -31,7 +35,29 @@ public class AbilityEvents {
     private static final Map<UUID, Long> PLAYER_COOLDOWNS_END_TICK = new HashMap<>();
     // --------------------------------------------------
 
+    // --- (기존 맵들...) ---
+
+    // --- [새로운 데이터 저장소 추가] ---
+    // <플레이어 UUID, 과거 상태 기록 Deque>
+    private static final Map<UUID, Deque<PlayerStateSnapshot>> PLAYER_HISTORY = new HashMap<>();
+    // 역행 시간 (초) * 20틱/초 = 저장할 틱 수
+    private static final int HISTORY_DURATION_TICKS = 3 * 20;
+    // ------------------------------------
     // --- 명령어 등에서 호출할 공용 메서드 ---
+
+    public static PlayerStateSnapshot getOldestSnapshot(Player player) {
+        Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.get(player.getUUID());
+        if (history == null || history.isEmpty()) {
+            return null;
+        }
+        return history.getFirst(); // Deque의 맨 앞(가장 오래된) 기록 반환
+    }
+    public static void clearHistory(Player player) {
+        Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.get(player.getUUID());
+        if (history != null) {
+            history.clear();
+        }
+    }
 
     public static void setPlayerAbility(Player player, IAbility ability) {
         if (ability == null) {
@@ -62,6 +88,36 @@ public class AbilityEvents {
 
     // --- 이벤트 리스너 ---
 
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent.Pre event) {
+        // 서버 측에서만 실행
+        if (!event.player.level().isClientSide) {
+            // --- [1. 기존 쿨타임 로직] ---
+            // (이 부분은 그대로 둡니다)
+
+            // --- [2. 새로운 과거 기록 로직] ---
+            UUID uuid = event.player.getUUID();
+
+            // 해당 플레이어의 기록 리스트를 가져오거나 새로 만듭니다.
+            Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.computeIfAbsent(uuid, k -> new ArrayDeque<>());
+
+            // 현재 상태를 '사진' 찍습니다.
+            PlayerStateSnapshot snapshot = new PlayerStateSnapshot(
+                    event.player.position(),
+                    event.player.getHealth(),
+                    event.player.getYRot(),
+                    event.player.getXRot()
+            );
+
+            // '사진'을 기록의 맨 뒤에 추가합니다.
+            history.addLast(snapshot);
+
+            // 기록이 너무 길어지면 맨 앞(가장 오래된) 기록을 삭제합니다.
+            if (history.size() > HISTORY_DURATION_TICKS) {
+                history.removeFirst();
+            }
+        }
+    }
 
     /**
      * 아이템 우클릭 시 능력을 발동시킵니다.

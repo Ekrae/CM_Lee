@@ -2,7 +2,7 @@ package com.example.examplemod.abilities;
 
 import com.example.examplemod.abilities.abilitySet.FireballAbility;
 import com.example.examplemod.abilities.abilitySet.GamblerAbility;
-import com.example.examplemod.abilities.abilitySet.TracerAbility;
+//import com.example.examplemod.abilities.abilitySet.TracerAbility;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
