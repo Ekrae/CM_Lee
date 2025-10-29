@@ -16,6 +16,12 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import java.util.Set;
+import java.util.HashSet;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +49,8 @@ public class AbilityEvents {
     // 역행 시간 (초) * 20틱/초 = 저장할 틱 수
     private static final int HISTORY_DURATION_TICKS = 3 * 20;
     // ------------------------------------
-    // --- 명령어 등에서 호출할 공용 메서드 ---
+    private static final Set<UUID> REWINDING_PLAYERS = new HashSet<>();
+
 
     public static PlayerStateSnapshot getOldestSnapshot(Player player) {
         Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.get(player.getUUID());
@@ -59,6 +66,7 @@ public class AbilityEvents {
         }
     }
 
+    // --- 명령어 등에서 호출할 공용 메서드 ---
     public static void setPlayerAbility(Player player, IAbility ability) {
         if (ability == null) {
             PLAYER_ABILITIES.remove(player.getUUID());
@@ -84,19 +92,86 @@ public class AbilityEvents {
         ResourceLocation id = PLAYER_ABILITIES.get(player.getUUID());
         return (id != null) ? AbilityRegistry.get(id) : null;
     }
+    // --- [새로운 '역행 시작' 메서드 추가] ---
+    public static void startRewind(ServerPlayer player) {
+        // 이미 역행 중이거나 기록이 없으면 실행하지 않습니다.
+        if (REWINDING_PLAYERS.contains(player.getUUID()) || !PLAYER_HISTORY.containsKey(player.getUUID())) {
+            return;
+        }
+
+        Level level = player.level();
+        Vec3 currentPos = player.position();
+
+        // 1. 역행 시작 신호 보내기
+        REWINDING_PLAYERS.add(player.getUUID());
+
+        // 2. 시작 시 화면 및 사운드 효과
+        // 말씀하신 NAUSEA를 사용합니다.
+        player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 40, 0, false, false)); // 2초
+        player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 10, 0, false, false)); // 0.5초
+
+        level.playSound(null, currentPos.x, currentPos.y, currentPos.z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+    }
 
 
     // --- 이벤트 리스너 ---
-
+    /**
+     * [수정!] onPlayerTick 이벤트가 이제 '역행 애니메이션'도 처리합니다.
+     */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent.Pre event) {
+        if (event.player.level().isClientSide || !(event.player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        UUID uuid = serverPlayer.getUUID();
+        // --- 1. 과거 기록 로직 (기존과 동일) ---
+        // (코드 생략)
+
+        // --- 2. [새로운 역행 애니메이션 로직] ---
+        if (REWINDING_PLAYERS.contains(uuid)) {
+            Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.get(uuid);
+
+            // 기록이 남아있다면
+            if (history != null && !history.isEmpty()) {
+                // 가장 '최근' 기록부터 하나씩 꺼냅니다. (뒤에서부터)
+                PlayerStateSnapshot frame = history.removeLast();
+
+                // 해당 프레임의 위치와 시점으로 플레이어를 텔레포트합니다.
+                serverPlayer.teleportTo(
+                        frame.position().x,
+                        frame.position().y,
+                        frame.position().z
+                );
+                serverPlayer.setYRot(frame.yRot());
+                serverPlayer.setXRot(frame.xRot());
+
+                // 매 프레임마다 작은 소리를 재생하여 효과를 더합니다.
+                serverPlayer.level().playSound(null, frame.position().x, frame.position().y, frame.position().z, SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.3F, 2.0F);
+
+                // 만약 이 프레임이 마지막 프레임(역행 종료)이라면
+                if (history.isEmpty()) {
+                    // 최종 상태(체력)를 복원합니다.
+                    serverPlayer.setHealth(frame.health());
+
+                    // 종료 사운드 재생
+                    serverPlayer.level().playSound(null, frame.position().x, frame.position().y, frame.position().z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.2F);
+
+                    // 역행 상태를 해제합니다.
+                    REWINDING_PLAYERS.remove(uuid);
+                }
+            } else {
+                // 혹시 모를 오류 방지: 기록이 없는데 역행 상태이면 강제 해제
+                REWINDING_PLAYERS.remove(uuid);
+            }
+        }
         // 서버 측에서만 실행
+        //여기는 기록 저장하는 쪽
         if (!event.player.level().isClientSide) {
             // --- [1. 기존 쿨타임 로직] ---
             // (이 부분은 그대로 둡니다)
 
             // --- [2. 새로운 과거 기록 로직] ---
-            UUID uuid = event.player.getUUID();
+
 
             // 해당 플레이어의 기록 리스트를 가져오거나 새로 만듭니다.
             Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.computeIfAbsent(uuid, k -> new ArrayDeque<>());

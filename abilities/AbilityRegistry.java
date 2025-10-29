@@ -3,6 +3,7 @@ package com.example.examplemod.abilities;
 import com.example.examplemod.abilities.abilitySet.FireballAbility;
 import com.example.examplemod.abilities.abilitySet.GamblerAbility;
 //import com.example.examplemod.abilities.abilitySet.TracerAbility;
+import com.example.examplemod.abilities.abilitySet.TracerAbility;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
@@ -23,6 +24,7 @@ public class AbilityRegistry {
     // --- 우리가 만들 실제 능력들을 여기에 등록합니다 ---
     public static final IAbility FIREBALL = register(new FireballAbility());
     public static final IAbility Gambler = register(new GamblerAbility());
+    public static final IAbility Tracer = register(new TracerAbility());
 
     //public static final IAbility HEAL = register(new HealAbility());
     // (새 능력을 만들 때마다 여기에 추가)

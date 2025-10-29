@@ -10,6 +10,9 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import com.example.examplemod.effectSet.BindEffect;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.api.distmarker.Dist;
@@ -55,7 +58,8 @@ public final class ExampleMod {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     // Create a Deferred Register to hold CreativeModeTabs which will all be registered under the "examplemod" namespace
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-
+    //이펙트 등록
+    public static final DeferredRegister<MobEffect> MOB_EFFECTS = DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, MODID);
     // Creates a new Block with the id "examplemod:example_block", combining the namespace and path
     public static final RegistryObject<Block> EXAMPLE_BLOCK = BLOCKS.register("example_block",
         () -> new Block(BlockBehaviour.Properties.of()
@@ -80,6 +84,11 @@ public final class ExampleMod {
             )
         )
     );
+    // --- [새로운 커스텀 효과 등록] ---
+    public static final RegistryObject<MobEffect> BIND_EFFECT = MOB_EFFECTS.register("bind",
+            () -> new BindEffect(MobEffectCategory.HARMFUL, 0x4B5320) // 해로운 효과, 올리브색
+    );
+    // -----------------------------------
 
     // Creates a creative tab with the id "examplemod:example_tab" for the example item, that is placed after the combat tab
     public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
@@ -101,7 +110,7 @@ public final class ExampleMod {
         ITEMS.register(modBusGroup);
         // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modBusGroup);
-
+        MOB_EFFECTS.register(modBusGroup);
         // Register the item to a creative tab
         BuildCreativeModeTabContentsEvent.getBus(modBusGroup).addListener(ExampleMod::addCreative);
 
