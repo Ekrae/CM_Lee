@@ -37,24 +37,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge; // 중요!
 import net.minecraftforge.event.RegisterCommandsEvent; // 중요!
 import net.minecraft.commands.arguments.ResourceLocationArgument;
-import com.example.examplemod.AbilityEvents;
 import com.example.examplemod.abilities.AbilityRegistry;
 import com.example.examplemod.abilities.IAbility;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.world.item.Rarity;
-import com.example.examplemod.itemSet.PushSwordItem;
 import net.minecraft.world.entity.EquipmentSlotGroup;
-import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 
 // The value here should match an entry in the META-INF/mods.toml file
