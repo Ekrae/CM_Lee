@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.Blocks;
 import com.example.examplemod.effectSet.BindEffect;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
+import com.example.examplemod.itemSet.PushSwordItem;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.api.distmarker.Dist;
@@ -44,6 +45,17 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.world.item.Rarity;
+import com.example.examplemod.itemSet.PushSwordItem;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ExampleMod.MODID)
@@ -68,23 +80,52 @@ public final class ExampleMod {
         )
     );
     // Creates a new BlockItem with the id "examplemod:example_block", combining the namespace and path
-    public static final RegistryObject<Item> EXAMPLE_BLOCK_ITEM = ITEMS.register("example_block",
-        () -> new BlockItem(EXAMPLE_BLOCK.get(), new Item.Properties().setId(ITEMS.key("example_block")))
-    );
+    // [핵심 수정] PUSH_SWORD 아이템 등록 로직
+    public static final RegistryObject<Item>
+            EXAMPLE_BLOCK_ITEM, PUSH_SWORD, EXAMPLE_ITEM;
+    /*
+     아이템 초기화 를록
+     */
+    static {
+        EXAMPLE_BLOCK_ITEM = ITEMS.register("example_block",
+                () -> new BlockItem(EXAMPLE_BLOCK.get(), new Item.Properties().setId(ITEMS.key("example_block")))
+        );
+        EXAMPLE_ITEM = ITEMS.register("example_item",
+                () -> new Item(new Item.Properties()
+                        .setId(ITEMS.key("example_item"))
+                        .food(new FoodProperties.Builder()
+                                .alwaysEdible()
+                                .nutrition(1)
+                                .saturationModifier(2f)
+                                .build()
+                        )
+                )
+        );
+        PUSH_SWORD = ITEMS.register("push_sword", () -> {
+            // 1. 사정거리 증가 속성을 먼저 정의합니다.
+            ItemAttributeModifiers attributeModifiers = ItemAttributeModifiers.builder()
+                    .add(
+                            Attributes.ENTITY_INTERACTION_RANGE, // 사정거리 속성
+                            new AttributeModifier(
+                                    ResourceLocation.fromNamespaceAndPath(MODID, "push_reach"), // 고유 ID
+                                    3.0, // 3블록 추가
+                                    AttributeModifier.Operation.ADD_VALUE
+                            ),
+                            EquipmentSlotGroup.MAINHAND// 손에 들었을 때만 적용
+                    )
+                    .build();
+            // 2. Item.Properties를 만들 때 위에서 정의한 속성을 .attributes()로 추가합니다.
+            return new PushSwordItem(
+                    new Item.Properties()
+                            .stacksTo(1)
+                            .rarity(Rarity.UNCOMMON)
+                            .attributes(attributeModifiers) // <-- [수정] 여기서 속성 부여
+            );
+        });
+    }
 
-    // Creates a new food item with the id "examplemod:example_id", nutrition 1 and saturation 2
-    public static final RegistryObject<Item> EXAMPLE_ITEM = ITEMS.register("example_item",
-        () -> new Item(new Item.Properties()
-            .setId(ITEMS.key("example_item"))
-            .food(new FoodProperties.Builder()
-                .alwaysEdible()
-                .nutrition(1)
-                .saturationModifier(2f)
-                .build()
-            )
-        )
-    );
-    // --- [새로운 커스텀 효과 등록] ---
+
+    // --- [새로운 커스텀 효과 등록] ---. 속박
     public static final RegistryObject<MobEffect> BIND_EFFECT = MOB_EFFECTS.register("bind",
             () -> new BindEffect(MobEffectCategory.HARMFUL, 0x4B5320) // 해로운 효과, 올리브색
     );
