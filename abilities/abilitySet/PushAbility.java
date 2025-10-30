@@ -1,7 +1,6 @@
 package com.example.examplemod.abilities.abilitySet; // (능력 패키지 경로)
 
 import com.example.examplemod.ExampleMod;
-import com.example.examplemod.abilities.IAbility;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;

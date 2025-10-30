@@ -1,7 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
 import com.example.examplemod.ExampleMod;
-import com.example.examplemod.abilities.IAbility;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;

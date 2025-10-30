@@ -1,12 +1,11 @@
-package com.example.examplemod.abilities;
+package com.example.examplemod.abilities.abilitySet;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 
 /**
- * 모든 '능력'이 구현해야 하는 인터페이스 (설계도)
- */
+ * 모든 '능력'이 구현해야 하는 인터페이스 (설계도). 어짜피 여기서만 import할테니 그냥 같은 패키지에 넣어둠. */
 public interface IAbility {
 
     int tickToSecond=20;

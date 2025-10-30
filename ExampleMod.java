@@ -38,7 +38,7 @@ import net.minecraftforge.common.MinecraftForge; // 중요!
 import net.minecraftforge.event.RegisterCommandsEvent; // 중요!
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import com.example.examplemod.abilities.AbilityRegistry;
-import com.example.examplemod.abilities.IAbility;
+import com.example.examplemod.abilities.abilitySet.IAbility;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.resources.ResourceLocation;

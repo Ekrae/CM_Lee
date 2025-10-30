@@ -1,7 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
 import com.example.examplemod.ExampleMod;
-import com.example.examplemod.abilities.IAbility;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
