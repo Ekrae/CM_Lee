@@ -7,7 +7,7 @@ import com.example.examplemod.AbilityEvents;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Items; // 예시: 시계
-import com.example.examplemod.abilitySet.PlayerStateSnapshot;
+import com.example.examplemod.abilityDataObject.PlayerStateSnapshot;
 
 public class TracerAbility implements IAbility {
     @Override
