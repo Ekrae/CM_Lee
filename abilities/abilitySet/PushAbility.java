@@ -33,19 +33,19 @@ public class PushAbility implements IAbility {
     public void execute(ServerPlayer player) {
 
         // 1. 우리가 등록한 커스텀 아이템의 인스턴스를 만듭니다.
-        ItemStack pushSwordStack = new ItemStack(ExampleMod.PUSH_SWORD.get());
+        //ItemStack pushSwordStack = new ItemStack(ExampleMod.PUSH_SWORD.get());
 
         // (선택) 아이템에 특별한 이름을 부여할 수도 있습니다.
         // pushSwordStack.set(DataComponents.CUSTOM_NAME, Component.literal("밀쳐내기 칼날"));
 
         // 2. 플레이어의 인벤토리에 아이템을 추가합니다.
         // .add()는 빈 슬롯을 찾아 넣어주고, 꽉 찼으면 바닥에 드롭합니다.
-        if (!player.getInventory().add(pushSwordStack)) {
-            player.drop(pushSwordStack, false);
-        }
-
-        // 3. 피드백
-        player.level().playSound(null, player.blockPosition(), SoundEvents.PISTON_EXTEND, SoundSource.PLAYERS, 0.7F, 1.0F);
-        player.displayClientMessage(Component.literal("밀쳐내기 칼날이 생성되었습니다!"), true);
+//        if (!player.getInventory().add(pushSwordStack)) {
+//            player.drop(pushSwordStack, false);
+//        }
+//
+//        // 3. 피드백
+//        player.level().playSound(null, player.blockPosition(), SoundEvents.PISTON_EXTEND, SoundSource.PLAYERS, 0.7F, 1.0F);
+//        player.displayClientMessage(Component.literal("밀쳐내기 칼날이 생성되었습니다!"), true);
     }
 }

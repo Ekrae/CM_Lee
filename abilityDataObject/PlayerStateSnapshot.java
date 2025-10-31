@@ -1,4 +1,4 @@
-package com.example.examplemod.abilitySet;
+package com.example.examplemod.abilityDataObject;
 
 import net.minecraft.world.phys.Vec3;
 

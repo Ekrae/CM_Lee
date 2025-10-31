@@ -65,18 +65,15 @@ public final class ExampleMod {
     public static final DeferredRegister<MobEffect> MOB_EFFECTS = DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, MODID);
     // Creates a new Block with the id "examplemod:example_block", combining the namespace and path
     public static final RegistryObject<Block> EXAMPLE_BLOCK = BLOCKS.register("example_block",
-        () -> new Block(BlockBehaviour.Properties.of()
-            .setId(BLOCKS.key("example_block"))
-            .mapColor(MapColor.STONE)
-        )
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .setId(BLOCKS.key("example_block"))
+                    .mapColor(MapColor.STONE)
+            )
     );
     // Creates a new BlockItem with the id "examplemod:example_block", combining the namespace and path
     // [핵심 수정] PUSH_SWORD 아이템 등록 로직
     public static final RegistryObject<Item>
-            EXAMPLE_BLOCK_ITEM, PUSH_SWORD, EXAMPLE_ITEM;
-    /*
-     아이템 초기화 를록
-     */
+            EXAMPLE_BLOCK_ITEM, EXAMPLE_ITEM;
     static {
         EXAMPLE_BLOCK_ITEM = ITEMS.register("example_block",
                 () -> new BlockItem(EXAMPLE_BLOCK.get(), new Item.Properties().setId(ITEMS.key("example_block")))
@@ -92,27 +89,27 @@ public final class ExampleMod {
                         )
                 )
         );
-        PUSH_SWORD = ITEMS.register("push_sword", () -> {
-            // 1. 사정거리 증가 속성을 먼저 정의합니다.
-            ItemAttributeModifiers attributeModifiers = ItemAttributeModifiers.builder()
-                    .add(
-                            Attributes.ENTITY_INTERACTION_RANGE, // 사정거리 속성
-                            new AttributeModifier(
-                                    ResourceLocation.fromNamespaceAndPath(MODID, "push_reach"), // 고유 ID
-                                    3.0, // 3블록 추가
-                                    AttributeModifier.Operation.ADD_VALUE
-                            ),
-                            EquipmentSlotGroup.MAINHAND// 손에 들었을 때만 적용
-                    )
-                    .build();
-            // 2. Item.Properties를 만들 때 위에서 정의한 속성을 .attributes()로 추가합니다.
-            return new PushSwordItem(
-                    new Item.Properties()
-                            .stacksTo(1)
-                            .rarity(Rarity.UNCOMMON)
-                            .attributes(attributeModifiers) // <-- [수정] 여기서 속성 부여
-            );
-        });
+//        PUSH_SWORD = ITEMS.register("push_sword", () -> {
+//            // 1. 사정거리 증가 속성을 먼저 정의합니다.
+//            ItemAttributeModifiers attributeModifiers = ItemAttributeModifiers.builder()
+//                    .add(
+//                            Attributes.ENTITY_INTERACTION_RANGE, // 사정거리 속성
+//                            new AttributeModifier(
+//                                    ResourceLocation.fromNamespaceAndPath(MODID, "push_reach"), // 고유 ID
+//                                    3.0, // 3블록 추가
+//                                    AttributeModifier.Operation.ADD_VALUE
+//                            ),
+//                            EquipmentSlotGroup.MAINHAND// 손에 들었을 때만 적용
+//                    )
+//                    .build();
+//            // 2. Item.Properties를 만들 때 위에서 정의한 속성을 .attributes()로 추가합니다.
+//            return new PushSwordItem(
+//                    new Item.Properties()
+//                            .stacksTo(1)
+//                            .rarity(Rarity.UNCOMMON)
+//                            .attributes(attributeModifiers) // <-- [수정] 여기서 속성 부여
+//            );
+//        });
     }
 
 
@@ -223,7 +220,7 @@ public final class ExampleMod {
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
         ResourceLocation abilityId = ResourceLocationArgument.getId(context,"ability_id"); //context가 입력받는 커맨드. 그 안에 ability_id에 대한 정보
 
-                IAbility ability = AbilityRegistry.get(abilityId);
+        IAbility ability = AbilityRegistry.get(abilityId);
         if (ability == null) {
             context.getSource().sendFailure(Component.literal(abilityId + " 능력을 찾을 수 없습니다.")); //여기도 문자열로 객체 출력시 .toString이 자동으로 붙나봄
             return 0;

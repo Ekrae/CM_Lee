@@ -23,8 +23,8 @@ public class SwapAbility implements IAbility {
 
     @Override
     public Item getTriggerItem() {
-        // 트리거 아이템: 엔더 진주
-        return Items.ENDER_PEARL;
+        // 트리거 아이템: 엔더의 눈
+        return Items.ENDER_EYE;
     }
 
     @Override
