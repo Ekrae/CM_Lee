@@ -101,7 +101,7 @@ public class StealAbility implements IAbility {
                 attacker.displayClientMessage(Component.literal(
                         "훔치기 쿨타임: " + String.format("%.1f", remainingSeconds) + "초 남음"
                 ), true);
-                attacker.displayClientMessage(Component.literal("5번문제"),true);
+                //attacker.displayClientMessage(Component.literal("5번문제"),true);
                 return;
             }
             attacker.displayClientMessage(Component.literal("여기 실행이 되나?"), true);

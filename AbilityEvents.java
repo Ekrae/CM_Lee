@@ -123,7 +123,7 @@ public class AbilityEvents {
         IAbility stolenAbility = StealAbility.StealHandler.getStolenAbility(serverPlayer);
         if (stolenAbility != null) {
             // [방어 코드 추가] 훔친 능력의 트리거 아이템이 null인지 확인
-            if (stolenAbility.getTriggerItem() != null && stack.getItem() == stolenAbility.getTriggerItem()) {
+            if (stolenAbility.getTriggerItem() != null && stack.getItem().equals(stolenAbility.getTriggerItem())) {
                 stolenAbility.execute(serverPlayer);
                 StealAbility.StealHandler.clearStolenAbility(serverPlayer);
                 stack.shrink(1);
@@ -142,7 +142,7 @@ public class AbilityEvents {
         if (ability.getTriggerItem() != null && stack.getItem() == ability.getTriggerItem()) {
 
             // --- [핵심 수정: 사슬 우클릭 쿨타임 문제 해결] ---
-            if (ability.getId() == AbilityRegistry.STEAL.getId()) {
+            if (ability.getId().equals(AbilityRegistry.STEAL.getId())) {
                 ability.execute(serverPlayer); // 메시지만 표시
                 return; // 쿨타임 로직을 실행하지 않고 즉시 종료
             }
