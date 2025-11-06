@@ -15,6 +15,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import com.example.examplemod.AbilityEvents; // [추가]
 import net.minecraft.world.phys.AABB;
 import java.util.List;
 
@@ -54,6 +55,7 @@ public class BindAbility implements IAbility {
 
         if (targets.isEmpty()) {
             caster.displayClientMessage(Component.literal("능력 범위 내에 다른 플레이어가 없습니다."), true);
+            AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(caster.getUUID(), 0L);
             return;
         }
 

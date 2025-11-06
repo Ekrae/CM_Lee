@@ -11,6 +11,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
+import com.example.examplemod.AbilityEvents; // [추가]
 
 import java.util.List;
 
@@ -99,6 +100,7 @@ public class SwapAbility implements IAbility {
         } else {
             // 유효한 대상을 찾지 못한 경우
             caster.displayClientMessage(Component.literal("능력 범위 내에 대상이 없습니다."), true);
+            AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(caster.getUUID(), 0L); // [추가]
         }
     }
 }
