@@ -119,53 +119,75 @@ public class AbilityEvents {
             return;
         }
 
-        // 1. [수정] 훔친 능력 사용 (StealHandler 호출)
+        // 1. [유지] 훔친 능력 사용
         IAbility stolenAbility = StealAbility.StealHandler.getStolenAbility(serverPlayer);
         if (stolenAbility != null) {
-            // [방어 코드 추가] 훔친 능력의 트리거 아이템이 null인지 확인
+            // ... (훔친 능력 로직) ...
             if (stolenAbility.getTriggerItem() != null && stack.getItem().equals(stolenAbility.getTriggerItem())) {
                 stolenAbility.execute(serverPlayer);
                 StealAbility.StealHandler.clearStolenAbility(serverPlayer);
                 stack.shrink(1);
+                // [수정] displayClientMessage 사용
                 serverPlayer.displayClientMessage(Component.literal("훔친 능력을 사용했습니다!"), true);
                 return;
             }
         }
 
-        // 2. 기본 능력 사용
+        // 2. [유지] 기본 능력 사용
         IAbility ability = getPlayerAbility(player);
         if (ability == null) {
             return;
         }
 
-        // [방어 코드 추가] 기본 능력의 트리거 아이템이 null인지 확인
         if (ability.getTriggerItem() != null && stack.getItem() == ability.getTriggerItem()) {
 
-            // --- [핵심 수정: 사슬 우클릭 쿨타임 문제 해결] ---
+            // 3. [유지] STEAL 능력 쿨타임 무시
             if (ability.getId().equals(AbilityRegistry.STEAL.getId())) {
-                ability.execute(serverPlayer); // 메시지만 표시
-                return; // 쿨타임 로직을 실행하지 않고 즉시 종료
+                ability.execute(serverPlayer);
+                return;
             }
-            // --- [여기까지 수정] ---
 
-            // (이하는 STEAL 능력이 아닐 때만 실행됨)
+            // 4. [유지] 쿨타임 확인
             long currentTime = level.getGameTime();
             long cooldownEndTick = PLAYER_COOLDOWNS_END_TICK.getOrDefault(player.getUUID(), 0L);
 
             if (currentTime < cooldownEndTick) {
                 long remainingTicks = cooldownEndTick - currentTime;
                 double remainingSeconds = remainingTicks / 20.0;
+
+                // --- [핵심 수정] ---
+                // sendSystemMessage 대신 displayClientMessage(..., true)를 사용합니다.
                 player.displayClientMessage(Component.literal(
                         "쿨타임: " + String.format("%.1f", remainingSeconds) + "초 남음"
                 ), true);
+                // --- [수정 완료] ---
                 return;
             }
 
+            // --- [쿨타임 덮어쓰기 버그 수정 로직 (이전과 동일)] ---
+
+            // 5. 능력 실행
             ability.execute(serverPlayer);
 
-            int cooldownInSeconds = ability.getCooldownSeconds();
-            long newCooldownEndTick = currentTime + (cooldownInSeconds * 20L);
-            PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
+            // 6. execute 실행 후 쿨타임 맵을 *다시* 확인
+            long cooldownSetByExecute = PLAYER_COOLDOWNS_END_TICK.getOrDefault(player.getUUID(), 0L);
+
+            // 7. execute가 쿨타임을 0(실패)으로 설정했는지 확인
+            if (cooldownSetByExecute == 0L) {
+                // 쿨타임이 0으로 초기화됨 (실패). 아무것도 하지 않고 0을 유지합니다.
+
+                // 8. execute가 쿨타임을 미래로(성공) 설정했는지 확인
+            } else if (cooldownSetByExecute > currentTime) {
+                // execute가 쿨타임을 직접 덮어썼음. 이 값을 유지합니다.
+
+                // 9. 쿨타임이 설정되지 않았다면 (기본 능력들)
+            } else {
+                // 기본 쿨타임을 적용합니다.
+                int cooldownInSeconds = ability.getCooldownSeconds();
+                long newCooldownEndTick = currentTime + (cooldownInSeconds * 20L);
+                PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
+            }
+            // --- [수정 완료] ---
         }
     }
 }
