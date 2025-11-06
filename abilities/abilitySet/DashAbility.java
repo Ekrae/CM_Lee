@@ -35,14 +35,22 @@ public class DashAbility implements IAbility {
 
         // 1. 플레이어가 바라보는 방향 벡터(Vec3)를 가져옵니다.
         Vec3 look = player.getLookAngle();
-
+        Vec3 currentMotion = player.getDeltaMovement();
         // 2. 돌진 속도를 설정합니다. (급류 3단계와 유사한 값)
+        // 2. 돌진 속도를 설정합니다.
         double speed = 2.5;
 
-        // 3. 바라보는 방향으로 속도(Motion)를 설정합니다.
-        //    Y축(수직) 속도를 살짝 보정하여(look.y * 0.8) 너무 높이/낮게 날아가지 않게 조절합니다.
-        Vec3 motion = new Vec3(look.x * speed, look.y * speed * 0.8 + 0.2, look.z * speed);
-        player.setDeltaMovement(motion);
+        // 3. 바라보는 방향에서 수평(X, Z) 방향 벡터만 추출하고 정규화(normalize)합니다.
+        //    (normalize를 해야 위나 아래를 보고 돌진해도 수평 속도가 일정하게 유지됩니다)
+        Vec3 horizontalDir = new Vec3(look.x, 0.0, look.z).normalize();
+        // 4. 새로운 속도를 계산합니다.
+        //    X와 Z는 수평 돌진 속도로 덮어쓰고, Y는 현재 Y속도(중력 등)를 그대로 유지합니다.
+        Vec3 newMotion = new Vec3(
+                horizontalDir.x * speed,
+                currentMotion.y(), // <-- 수직 속도는 그대로 유지
+                horizontalDir.z * speed
+        );
+        player.setDeltaMovement(newMotion);
 
         // 4. [매우 중요] 서버에서 변경한 속도를 클라이언트에 즉시 동기화합니다.
         //    이 값을 true로 설정해야 날아가는 움직임이 렉 없이 부드럽게 적용됩니다.
