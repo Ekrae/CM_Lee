@@ -19,7 +19,7 @@ public class AbilityRegistry {
 
     // --- 우리가 만들 실제 능력들을 여기에 등록합니다 ---
     public static final IAbility
-            FIREBALL, GAMBLER,TRACER ,BIND, PUSH,INVISIBILITY,SWAP,STEAL,DASH,KINGSLAYER;
+            FIREBALL, GAMBLER,TRACER ,BIND, PUSH,INVISIBILITY,SWAP,STEAL,DASH,KINGSLAYER,MAGICIAN;;
     static {
         FIREBALL = register(new FireballAbility());
         GAMBLER = register(new GamblerAbility());
@@ -31,6 +31,7 @@ public class AbilityRegistry {
         STEAL = register(new StealAbility());
         DASH = register(new DashAbility());
         KINGSLAYER = register(new KingslayerAbility());
+        MAGICIAN = register(new MagicianAbility());
 
     }
     //public static final IAbility HEAL = register(new HealAbility());
