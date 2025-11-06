@@ -194,8 +194,8 @@ public class MagicianAbility implements IAbility {
             int wallCount = 0;
 
             for (int y = 0; y < 2; y++) {
-                for (int i = 0; i < 3; i++) {
-                    BlockPos wallPos = startPos.relative(facing.getClockWise(), i - 1).above(y);
+                for (int i = 0; i < 5; i++) {
+                    BlockPos wallPos = startPos.relative(facing.getClockWise(), i - 2).above(y);
                     if (level.getBlockState(wallPos).canBeReplaced()) {
                         level.setBlock(wallPos, wallBlock, 3);
 
