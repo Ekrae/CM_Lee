@@ -68,7 +68,7 @@ public class HackAbility implements IAbility {
             HackHandler.scheduleTagReapply(target.getUUID(), HACK_DURATION_TICKS); // 복구 예약
 
             // 대상에게 피드백
-            target.displayClientMessage(Component.literal("보안 시스템이 일시적으로 해킹당했습니다!"), true);
+            target.displayClientMessage(Component.literal("술래가 일시적으로 해킹당했습니다!"), true);
             target.level().playSound(null, target.blockPosition(), SoundEvents.GENERIC_EXTINGUISH_FIRE, SoundSource.PLAYERS, 1.0F, 0.8F);
         }
 
