@@ -296,16 +296,19 @@ public final class ExampleMod {
         }
 
         // 아이템의 표시 이름 가져오기
-        Component itemName = ability.getTriggerItem().getName(ItemStack.EMPTY);
+        // [핵심 수정] 아이템 이름과 ID를 정확하게 가져오기
+        ItemStack triggerStack = new ItemStack(ability.getTriggerItem());
+        Component itemName = triggerStack.getHoverName(); // 아이템 이름 (예: 막대기)
+        String itemId = ForgeRegistries.ITEMS.getKey(ability.getTriggerItem()).toString(); // 아이템 ID (예: minecraft:stick)
 
-        // 정보 조합
         net.minecraft.network.chat.MutableComponent info = Component.literal("")
                 .append(Component.literal("--- 능력: ").withStyle(net.minecraft.ChatFormatting.WHITE))
                 .append(Component.literal(ability.getId().getPath()).withStyle(net.minecraft.ChatFormatting.GOLD))
                 .append(Component.literal(" ---\n"))
 
                 .append(Component.literal("  트리거: ").withStyle(net.minecraft.ChatFormatting.GRAY))
-                .append(itemName.copy().withStyle(net.minecraft.ChatFormatting.AQUA)) // 아이템 이름
+                .append(itemName.copy().withStyle(net.minecraft.ChatFormatting.AQUA)) // 이름
+                .append(Component.literal(" (" + itemId + ")").withStyle(net.minecraft.ChatFormatting.DARK_GRAY)) // ID
                 .append(Component.literal("\n"))
 
                 .append(Component.literal("  쿨타임: ").withStyle(net.minecraft.ChatFormatting.GRAY))
@@ -313,7 +316,7 @@ public final class ExampleMod {
                 .append(Component.literal("\n"))
 
                 .append(Component.literal("  효  과: ").withStyle(net.minecraft.ChatFormatting.GRAY))
-                .append(ability.getDescription().copy().withStyle(net.minecraft.ChatFormatting.WHITE)); // [중요] IAbility에 추가된 메서드 호출
+                .append(ability.getDescription().copy().withStyle(net.minecraft.ChatFormatting.WHITE));
 
         source.sendSuccess(() -> info, false);
         return 1;
