@@ -53,6 +53,11 @@ public class MagicianAbility implements IAbility {
 
 
     @Override
+    public Component getDescription() {
+        return Component.literal("왼손의 촉매에 따라 4원소(불,바람,땅,물) 마법을 사용합니다.");
+    }
+
+    @Override
     public ResourceLocation getId() {
         return ResourceLocation.fromNamespaceAndPath(ExampleMod.MODID, "magician");
     }

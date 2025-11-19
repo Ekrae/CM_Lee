@@ -46,6 +46,10 @@ public class TracerAbility implements IAbility {
     public int getCooldownSeconds() {
         return 12;
     }
+    @Override
+    public Component getDescription() {
+        return Component.literal("3초 전의 위치, 체력, 시야각으로 되돌아갑니다.");
+    }
 
     @Override
     public void execute(ServerPlayer player) {

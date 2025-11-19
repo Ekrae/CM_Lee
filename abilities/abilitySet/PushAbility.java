@@ -29,6 +29,10 @@ public class PushAbility implements IAbility {
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("데미지 없이 적을 멀리 밀쳐내는 '밀쳐내기 막대'를 1개 생성합니다.");
+    }
+    @Override
     public int getCooldownSeconds() {
         return 10;
     }

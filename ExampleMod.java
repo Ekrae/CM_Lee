@@ -4,10 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import com.example.examplemod.effectSet.BindEffect;
@@ -42,7 +39,6 @@ import com.example.examplemod.abilities.abilitySet.IAbility;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Rarity;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -176,57 +172,72 @@ public final class ExampleMod {
     public void onRegisterCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
-        // 기존 /bee 명령어는 삭제하거나 주석 처리
-        /*
-        dispatcher.register(
-            Commands.literal("bee").executes(this::executeBeeCommand)
-        );
-        */
+        // --- [수정] 명령어 구조 변경 ---
+        // 기존 /bee 명령어는 삭제
 
-        // --- 새로운 /ability 명령어 등록 ---
+        // 1. 관리자(OP) 전용 명령어 (/ability set, /ability clear)
         dispatcher.register(
                 Commands.literal("ability")
-                        // 관리자(op레벨 2)만 사용 가능하도록 설정
-                        .requires(cs -> cs.hasPermission(2))
+                        .requires(cs -> cs.hasPermission(2)) // OP 레벨 2 필요
 
                         // /ability set <player> <ability_id>
                         .then(Commands.literal("set")
-                                .then(Commands.argument("player", EntityArgument.player())// String ArgumentType.string() 대신 ResourceLocationArgument.id() 사용
-                                        .then(Commands.argument("ability_id", ResourceLocationArgument.id()) // <ability_id>
-                                                // 명령어 자동완성 (Tab 키) 기능 추가
-                                                .suggests((context, builder) -> {
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .then(Commands.argument("ability_id", ResourceLocationArgument.id())
+                                                .suggests((context, builder) -> { // 자동완성
                                                     AbilityRegistry.getAbilityIds().stream()
                                                             .map(ResourceLocation::toString)
                                                             .forEach(builder::suggest);
                                                     return builder.buildFuture();
                                                 })
-                                                .executes(this::executeAbilitySet) // 실행할 메서드
+                                                .executes(this::executeAbilitySet) // 실행 메서드
                                         )
                                 )
                         )
                         // /ability clear <player>
                         .then(Commands.literal("clear")
                                 .then(Commands.argument("player", EntityArgument.player())
-                                        .executes(this::executeAbilityClear) // 실행할 메서드
+                                        .executes(this::executeAbilityClear) // 실행 메서드
+                                )
+                        )
+        );
+
+        // 2. 모든 플레이어 사용 가능 명령어 (/ability help)
+        dispatcher.register(
+                Commands.literal("ability")
+                        // [권한(requires) 설정 없음]
+
+                        .then(Commands.literal("help")
+                                // /ability help (전체 목록)
+                                .executes(this::executeAbilityHelpList) // [신규]
+
+                                // /ability help <ability_id> (상세 정보)
+                                .then(Commands.argument("ability_id", ResourceLocationArgument.id())
+                                        .suggests((context, builder) -> { // 자동완성
+                                            AbilityRegistry.getAbilityIds().stream()
+                                                    .map(ResourceLocation::toString)
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(this::executeAbilityHelpDetail) // [신규]
                                 )
                         )
         );
     }
 
     /**
-     * /ability set <player> <ability_id> 명령어의 실제 로직
+     * /ability set <player> <ability_id> 명령어의 실제 로직 (기존과 동일)
      */
     private int executeAbilitySet(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
-        ResourceLocation abilityId = ResourceLocationArgument.getId(context,"ability_id"); //context가 입력받는 커맨드. 그 안에 ability_id에 대한 정보
+        ResourceLocation abilityId = ResourceLocationArgument.getId(context,"ability_id");
 
         IAbility ability = AbilityRegistry.get(abilityId);
         if (ability == null) {
-            context.getSource().sendFailure(Component.literal(abilityId + " 능력을 찾을 수 없습니다.")); //여기도 문자열로 객체 출력시 .toString이 자동으로 붙나봄
+            context.getSource().sendFailure(Component.literal(abilityId + " 능력을 찾을 수 없습니다."));
             return 0;
         }
 
-        // AbilityEvents에 정의한 메서드 호출
         AbilityEvents.setPlayerAbility(player, ability);
         context.getSource().sendSuccess(() -> Component.literal(
                 player.getName().getString() + "에게 " + ability.getId().getPath() + " 능력을 부여했습니다."
@@ -236,12 +247,11 @@ public final class ExampleMod {
     }
 
     /**
-     * /ability clear <player> 명령어의 실제 로직
+     * /ability clear <player> 명령어의 실제 로직 (기존과 동일)
      */
     private int executeAbilityClear(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
 
-        // ability를 null로 설정하여 제거
         AbilityEvents.setPlayerAbility(player, null);
         context.getSource().sendSuccess(() -> Component.literal(
                 player.getName().getString() + "의 능력을 제거했습니다."
@@ -249,6 +259,68 @@ public final class ExampleMod {
 
         return 1; // 성공
     }
+
+    // --- [신규 메서드 1: /ability help (전체 목록)] ---
+    private int executeAbilityHelpList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+
+        // 여러 줄의 텍스트를 하나로 합치기
+        net.minecraft.network.chat.MutableComponent fullMessage =
+                Component.literal("--- 사용 가능한 능력 목록 ---\n");
+
+        // AbilityRegistry에서 모든 능력 ID를 가져와서 [id] 형식으로 추가
+        for (ResourceLocation id : AbilityRegistry.getAbilityIds()) {
+            fullMessage.append(
+                    Component.literal(" - ")
+                            .append(Component.literal(id.getPath()).withStyle(net.minecraft.ChatFormatting.GREEN))
+                            .append("\n")
+            );
+        }
+
+        fullMessage.append(Component.literal("상세 정보: /ability help <능력ID>"));
+
+        // 합쳐진 메시지를 한 번에 전송
+        source.sendSuccess(() -> fullMessage, false); // false = 다른 OP에게 알리지 않음
+        return 1;
+    }
+
+    // --- [신규 메서드 2: /ability help <ability_id> (상세)] ---
+    private int executeAbilityHelpDetail(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ResourceLocation abilityId = ResourceLocationArgument.getId(context,"ability_id");
+
+        IAbility ability = AbilityRegistry.get(abilityId);
+        if (ability == null) {
+            source.sendFailure(Component.literal(abilityId + " 능력을 찾을 수 없습니다."));
+            return 0;
+        }
+
+        // 아이템의 표시 이름 가져오기
+        Component itemName = ability.getTriggerItem().getName(ItemStack.EMPTY);
+
+        // 정보 조합
+        net.minecraft.network.chat.MutableComponent info = Component.literal("")
+                .append(Component.literal("--- 능력: ").withStyle(net.minecraft.ChatFormatting.WHITE))
+                .append(Component.literal(ability.getId().getPath()).withStyle(net.minecraft.ChatFormatting.GOLD))
+                .append(Component.literal(" ---\n"))
+
+                .append(Component.literal("  트리거: ").withStyle(net.minecraft.ChatFormatting.GRAY))
+                .append(itemName.copy().withStyle(net.minecraft.ChatFormatting.AQUA)) // 아이템 이름
+                .append(Component.literal("\n"))
+
+                .append(Component.literal("  쿨타임: ").withStyle(net.minecraft.ChatFormatting.GRAY))
+                .append(Component.literal(ability.getCooldownSeconds() + "초").withStyle(net.minecraft.ChatFormatting.WHITE))
+                .append(Component.literal("\n"))
+
+                .append(Component.literal("  효  과: ").withStyle(net.minecraft.ChatFormatting.GRAY))
+                .append(ability.getDescription().copy().withStyle(net.minecraft.ChatFormatting.WHITE)); // [중요] IAbility에 추가된 메서드 호출
+
+        source.sendSuccess(() -> info, false);
+        return 1;
+    }
+
+
+    // --- [ 여기까지 ] ---
 
     /**
      * /bee 명령어의 실제 실행 로직

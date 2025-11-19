@@ -38,7 +38,10 @@ public class StealAbility implements IAbility {
     public int getCooldownSeconds() {
         return 30; // 훔치기 자체의 쿨타임
     }
-
+    @Override
+    public Component getDescription() {
+        return Component.literal("사슬로 다른 플레이어를 때려 능력을 복사합니다. (1회용)");
+    }
     @Override
     public void execute(ServerPlayer player) {
         // 사슬을 그냥 우클릭(사용)했을 때 (쿨타임 X, onRightClickItem에서 처리)

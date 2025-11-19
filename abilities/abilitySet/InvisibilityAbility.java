@@ -23,6 +23,10 @@ public class InvisibilityAbility implements IAbility {
         // 트리거: 하얀색 염료
         return Items.WHITE_DYE;
     }
+    @Override
+    public Component getDescription() {
+        return Component.literal("5초간 파티클이 없는 투명화 상태가 됩니다.");
+    }
 
     @Override
     public int getCooldownSeconds() {

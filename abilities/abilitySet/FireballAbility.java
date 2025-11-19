@@ -25,6 +25,10 @@ public class FireballAbility implements IAbility {
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("바라보는 방향으로 강력한 화염구를 발사합니다. (맵 파괴)");
+    }
+    @Override
     public int getCooldownSeconds() {
         return 5;
     }

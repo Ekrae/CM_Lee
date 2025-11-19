@@ -20,6 +20,10 @@ public class DashAbility implements IAbility {
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("바라보는 수평 방향으로 빠르게 돌진합니다.");
+    }
+    @Override
     public Item getTriggerItem() {
         // 요청하신 대로 '철창'을 트리거 아이템으로 설정합니다.
         return Items.IRON_BARS;

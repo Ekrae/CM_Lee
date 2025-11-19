@@ -32,6 +32,10 @@ public class HackAbility implements IAbility {
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("주변 5x3x5 범위 내 'pol' 태그를 가진 술래를 5초간 해킹합니다.");
+    }
+    @Override
     public Item getTriggerItem() {
         // 능력 아이템: 레드스톤 토치 (테마에 맞게)
         return Items.REDSTONE_TORCH;

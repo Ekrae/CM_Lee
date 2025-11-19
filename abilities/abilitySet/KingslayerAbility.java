@@ -29,6 +29,10 @@ public class KingslayerAbility implements IAbility {
     public int getCooldownSeconds() {
         return 15;
     }
+    @Override
+    public Component getDescription() {
+        return Component.literal("가까운 적에게 돌진하여 피해를 주고 체력을 흡수합니다.");
+    }
 
     @Override
     @SuppressWarnings("resource")

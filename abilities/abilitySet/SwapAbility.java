@@ -27,6 +27,10 @@ public class SwapAbility implements IAbility {
         // 트리거 아이템: 엔더의 눈
         return Items.ENDER_EYE;
     }
+    @Override
+    public Component getDescription() {
+        return Component.literal("40블록 내의 가장 가까운 대상과 위치를 바꿉니다. ('pol' 태그 제외)");
+    }
 
     @Override
     public int getCooldownSeconds() {

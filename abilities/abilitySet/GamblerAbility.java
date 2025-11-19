@@ -26,6 +26,10 @@ public class GamblerAbility implements IAbility {
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("무작위 효과(신속,투명,재생,구속,발광) 중 하나를 얻습니다.");
+    }
+    @Override
     public int getCooldownSeconds() {
         return 5;
     }

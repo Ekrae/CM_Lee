@@ -34,6 +34,10 @@ public class BindAbility implements IAbility {
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("주변 4블록 내의 모든 적을 3초간 속박합니다.");
+    }
+    @Override
     public int getCooldownSeconds() {
         return 15; // 15초 쿨타임
     }

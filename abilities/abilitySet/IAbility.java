@@ -3,7 +3,7 @@ package com.example.examplemod.abilities.abilitySet;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
-
+import net.minecraft.network.chat.Component; // [추가]
 /**
  * 모든 '능력'이 구현해야 하는 인터페이스 (설계도). 어짜피 여기서만 import할테니 그냥 같은 패키지에 넣어둠. */
 public interface IAbility {
@@ -33,4 +33,9 @@ public interface IAbility {
 
     // (선택적) 능력에 대한 설명을 반환하는 메서드 등을 추가할 수 있습니다.
     //String getDescription();
+    /**
+     * [추가] /ability help 명령어에 표시될 능력의 설명입니다.
+     * @return Component (채팅창에 표시될 텍스트)
+     */
+    Component getDescription();
 }
