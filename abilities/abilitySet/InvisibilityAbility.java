@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
@@ -31,13 +32,13 @@ public class InvisibilityAbility implements IAbility {
     @Override
     public int getCooldownSeconds() {
         // 쿨타임 (적절하게 20초로 설정했습니다)
-        return 20;
+        return Config.invisibility_cooldown;
     }
 
     @Override
     public void execute(ServerPlayer player) {
         // 1. 설정: 5초
-        int durationInTicks = 5 * 20;
+        int durationInTicks = Config.invisibility_duration * 20;
         int amplifier = 0; // 1단계
 
         // 2. 효과 "상자(Holder)" 가져오기

@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -41,7 +42,7 @@ public class PushAbility implements IAbility {
     public void execute(ServerPlayer player) {
         // 1. 기반 아이템을 '목검'으로 변경
         ItemStack customSword = new ItemStack(Items.WOODEN_SWORD);
-
+        double knockback = Config.push_strength;
         // 2. 아이템에 부여할 속성 정의
         ItemAttributeModifiers attributeModifiers = ItemAttributeModifiers.builder()
 
@@ -50,7 +51,7 @@ public class PushAbility implements IAbility {
                         Attributes.ATTACK_KNOCKBACK, // 공격 밀치기
                         new AttributeModifier(
                                 ResourceLocation.fromNamespaceAndPath(ExampleMod.MODID, "extra_knockback"),
-                                2.0, // 추가할 밀치기 수치 (매우 강력함)
+                                knockback, // 추가할 밀치기 수치 (매우 강력함)
                                 AttributeModifier.Operation.ADD_VALUE // 값 더하기
                         ),
                         EquipmentSlotGroup.MAINHAND

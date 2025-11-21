@@ -28,7 +28,7 @@ public class KingslayerAbility implements IAbility {
 
     @Override
     public int getCooldownSeconds() {
-        return 15;
+        return Config.kingslayer_cooldown;
     }
     @Override
     public Component getDescription() {
@@ -41,7 +41,7 @@ public class KingslayerAbility implements IAbility {
         ServerLevel level = (ServerLevel) caster.level();
 
         // 1. 대상 탐색 (범위 5)
-        double maxDistanceSqr = Config.kslayerRange * Config.kslayerRange;
+        double maxDistanceSqr = Config.kingslayer_range*Config.kingslayer_range;
         ServerPlayer closestTarget = null;
         double closestDistSqr = Double.MAX_VALUE;
 
@@ -77,8 +77,8 @@ public class KingslayerAbility implements IAbility {
 
             if (isTargetPol) {
                 // [A] 대상이 'pol' (술래)
-                healAmount = 12.0F; // 6하트
-                float damage = 4.0F; // 2하트 데미지
+                healAmount = (float) Config.kingslayer_pol_heal; // 6하트
+                float damage = (float) Config.kingslayer_pol_damage; // 2하트 데미지
 
                 closestTarget.hurt(caster.damageSources().playerAttack(caster), damage);
                 level.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.7F, 1.5F);
@@ -90,8 +90,8 @@ public class KingslayerAbility implements IAbility {
 
             } else {
                 // [B] 대상이 'pol'이 아닌 (도망자)
-                healAmount = 3.0F; // 1.5하트
-                float damage = (float) Config.kslayerDamageRunner; // 3하트 데미지
+                healAmount = (float) Config.kingslayer_runner_heal;
+                float damage = (float) Config.kingslayer_runner_damage;
 
                 closestTarget.hurt(caster.damageSources().playerAttack(caster), damage);
 

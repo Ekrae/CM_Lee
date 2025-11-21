@@ -1,6 +1,7 @@
 package com.example.examplemod.abilities.abilitySet;
 
 import com.example.examplemod.AbilityEvents; // AbilityEvents의 공용 메서드를 호출하기 위해 필요
+import com.example.examplemod.Config;
 import com.example.examplemod.abilities.AbilityRegistry;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.network.chat.Component;
@@ -36,7 +37,7 @@ public class StealAbility implements IAbility {
 
     @Override
     public int getCooldownSeconds() {
-        return 30; // 훔치기 자체의 쿨타임
+        return Config.steal_cooldown; // 훔치기 자체의 쿨타임
     }
     @Override
     public Component getDescription() {
@@ -107,7 +108,7 @@ public class StealAbility implements IAbility {
                 //attacker.displayClientMessage(Component.literal("5번문제"),true);
                 return;
             }
-            attacker.displayClientMessage(Component.literal("여기 실행이 되나?"), true);
+            //attacker.displayClientMessage(Component.literal("여기 실행이 되나?"), true);
 
             // [수정] AbilityEvents의 공용 헬퍼 메서드를 호출
             IAbility targetAbility = AbilityEvents.getPlayerAbility(target);
@@ -133,12 +134,30 @@ public class StealAbility implements IAbility {
             // [수정] 이 클래스(StealHandler)의 헬퍼 메서드를 호출
             setStolenAbility(attacker, targetAbility);
 
+            // 1. 트리거 아이템 지급
             ItemStack triggerItem = new ItemStack(targetAbility.getTriggerItem(), 1);
             if (!attacker.getInventory().add(triggerItem)) {
                 attacker.drop(triggerItem, false);
             }
 
-            // [수정] AbilityEvents의 공용 쿨타임 맵에 쿨타임 적용
+            // 2-1. 마법사 능력일 경우 촉매 아이템 4종 지급
+            if (targetAbility.getId().equals(AbilityRegistry.MAGICIAN.getId())) {
+                attacker.getInventory().add(new ItemStack(Items.RED_CANDLE));     // 불
+                attacker.getInventory().add(new ItemStack(Items.FEATHER));        // 바람
+                attacker.getInventory().add(new ItemStack(Items.DIRT));           // 땅
+                attacker.getInventory().add(new ItemStack(Items.NAUTILUS_SHELL)); // 물
+
+                attacker.displayClientMessage(Component.literal("마법사의 촉매들도 함께 훔쳤습니다!"), true);
+            }
+
+            // 2-2. [신규] 해커 능력일 경우 촉매 아이템(먹물) 지급
+            if (targetAbility.getId().equals(AbilityRegistry.HACK.getId())) {
+                attacker.getInventory().add(new ItemStack(Items.INK_SAC)); // 어둠(실명) 촉매
+
+                attacker.displayClientMessage(Component.literal("해커의 촉매(먹물)도 함께 훔쳤습니다!"), true);
+            }
+
+            // 3. 쿨타임 적용
             long newCooldownEndTick = currentTime + (attackerAbility.getCooldownSeconds() * 20L);
             AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(attacker.getUUID(), newCooldownEndTick);
 
@@ -148,4 +167,3 @@ public class StealAbility implements IAbility {
         }
     }
 }
-

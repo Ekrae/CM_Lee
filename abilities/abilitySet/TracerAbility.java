@@ -1,6 +1,7 @@
 package com.example.examplemod.abilities.abilitySet;
 
 // 1. 필요한 Import 문 정리
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import com.example.examplemod.abilityDataObject.PlayerStateSnapshot;
 import net.minecraft.core.Holder;
@@ -44,7 +45,7 @@ public class TracerAbility implements IAbility {
 
     @Override
     public int getCooldownSeconds() {
-        return 12;
+        return Config.tracer_cooldown;
     }
     @Override
     public Component getDescription() {

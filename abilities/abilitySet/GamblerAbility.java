@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,7 +15,7 @@ import net.minecraft.core.Holder;
 
 public class GamblerAbility implements IAbility {
 
-    final int durationInTicks = 200;
+    final int durationInTicks = Config.gambler_duration;
     @Override
     public ResourceLocation getId() {
         return ResourceLocation.fromNamespaceAndPath(ExampleMod.MODID, "gambler");
@@ -31,7 +32,7 @@ public class GamblerAbility implements IAbility {
     }
     @Override
     public int getCooldownSeconds() {
-        return 5;
+        return Config.gambler_cooldown;
     }
 
     @Override

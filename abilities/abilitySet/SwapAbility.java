@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -34,14 +35,14 @@ public class SwapAbility implements IAbility {
 
     @Override
     public int getCooldownSeconds() {
-        return 20; // 20초 쿨타임
+        return Config.swap_cooldown; // 20초 쿨타임
     }
 
     @Override
     @SuppressWarnings("resource")
     public void execute(ServerPlayer caster) {
         ServerLevel level = (ServerLevel) caster.level();
-        double maxDistanceSqr = 40.0 * 40.0; // 40블록 (제곱 거리)
+        double maxDistanceSqr = Config.swap_range * Config.swap_range; // 40블록 (제곱 거리)
 
         ServerPlayer closestTarget = null;
         double closestDistSqr = Double.MAX_VALUE;

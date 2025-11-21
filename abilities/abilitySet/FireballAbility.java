@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -30,7 +31,7 @@ public class FireballAbility implements IAbility {
     }
     @Override
     public int getCooldownSeconds() {
-        return 5;
+        return Config.fireball_cooldown;
     }
 
     @Override

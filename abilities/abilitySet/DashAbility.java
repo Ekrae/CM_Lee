@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -31,7 +32,7 @@ public class DashAbility implements IAbility {
 
     @Override
     public int getCooldownSeconds() {
-        return 8; // 돌진 쿨타임 (8초)
+        return Config.dash_cooldown; // 돌진 쿨타임 (8초)
     }
 
     @Override
@@ -42,7 +43,7 @@ public class DashAbility implements IAbility {
         Vec3 currentMotion = player.getDeltaMovement();
         // 2. 돌진 속도를 설정합니다. (급류 3단계와 유사한 값)
         // 2. 돌진 속도를 설정합니다.
-        double speed = 2.5;
+        double speed = Config.dash_speed;
 
         // 3. 바라보는 방향에서 수평(X, Z) 방향 벡터만 추출하고 정규화(normalize)합니다.
         //    (normalize를 해야 위나 아래를 보고 돌진해도 수평 속도가 일정하게 유지됩니다)

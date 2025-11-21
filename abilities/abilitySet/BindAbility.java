@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -39,14 +40,14 @@ public class BindAbility implements IAbility {
     }
     @Override
     public int getCooldownSeconds() {
-        return 15; // 15초 쿨타임
+        return Config.bind_cooldown; // 동적 할당; // 15초 쿨타임
     }
 
     @Override
     @SuppressWarnings("resource")
     public void execute(ServerPlayer caster) {
-        double radius = 4.0;
-        int durationInTicks = 3 * 20; // 3초
+        double radius = Config.bind_radius;
+        int durationInTicks = Config.bind_duration * 20; // 3초
 
         ServerLevel level = (ServerLevel) caster.level();
         AABB searchArea = caster.getBoundingBox().inflate(radius);

@@ -1,6 +1,7 @@
 package com.example.examplemod.abilities.abilitySet;
 
 import com.example.examplemod.AbilityEvents;
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -70,7 +71,7 @@ public class MagicianAbility implements IAbility {
     @Override
     public int getCooldownSeconds() {
         // 기본 쿨타임 8초
-        return FIRE_COOLDOWN_SEC;
+        return Config.magician_fire_cd;
     }
 
     @Override
@@ -90,15 +91,13 @@ public class MagicianAbility implements IAbility {
         } else if (offHandStack.is(WIND_CATALYST)) {
             WindSpell.cast(player);
             // 10초 쿨타임 덮어쓰기
-            long newCooldownEndTick = currentTime + (WIND_COOLDOWN_SEC * 20L);
+            long newCooldownEndTick = currentTime + (Config.magician_wind_cd * 20L); // Config 사용
             AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
-
             // 3. 땅 마법
         } else if (offHandStack.is(EARTH_CATALYST)) {
             boolean success = EarthSpell.cast(player);
             if (success) {
-                // 15초 쿨타임 덮어쓰기
-                long newCooldownEndTick = currentTime + (EARTH_COOLDOWN_SEC * 20L);
+                long newCooldownEndTick = currentTime + (Config.magician_earth_cd * 20L); // Config 사용
                 AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
             } else {
                 // 실패 시 쿨타임 0으로 초기화
@@ -108,12 +107,9 @@ public class MagicianAbility implements IAbility {
             // 4. 물 마법
         } else if (offHandStack.is(WATER_CATALYST)) {
             WaterSpell.cast(player);
-            // 20초 쿨타임 덮어쓰기
-            long newCooldownEndTick = currentTime + (WATER_COOLDOWN_SEC * 20L);
+            long newCooldownEndTick = currentTime + (Config.magician_water_cd * 20L); // Config 사용
             AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
-
-            // 5. 촉매 없음
-        } else {
+        } else { //촉매 X
             // [수정 3] 힌트 메시지 수정 (RED_CANDLE)
             player.sendSystemMessage(Component.literal("왼손에 속성 촉매(빨간 양초, 깃털, 흙, 앵무조개 껍데기)를 들어주세요."));
             // 쿨타임 0으로 초기화
@@ -144,10 +140,9 @@ public class MagicianAbility implements IAbility {
     // --- 중첩 클래스 (2): 바람 마법 ---
     private static class WindSpell {
         static void cast(ServerPlayer player) {
-            MobEffectInstance effectInstance = new MobEffectInstance(
-                    MobEffects.SPEED, 100, 0, false, true); // 5초
+            int duration = Config.magician_wind_dur * 20;
+            MobEffectInstance effectInstance = new MobEffectInstance(MobEffects.SPEED, duration, 0, false, true);
             player.addEffect(effectInstance);
-
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 1.5F);
             player.sendSystemMessage(Component.literal("바람처럼 신속해집니다! (5초)"));
         }
@@ -162,18 +157,12 @@ public class MagicianAbility implements IAbility {
             List<ServerPlayer> targets = level.getEntitiesOfClass(ServerPlayer.class, searchArea);
 
             Holder<MobEffect> regenerationHolder = MobEffects.REGENERATION;
-            int durationInTicks = 60; // 3초
+            int duration = Config.magician_water_dur * 20;
             int amplifier = 0; // 재생 I
 
             for (ServerPlayer target : targets) {
                 // (1.21.8 방식)
-                MobEffectInstance newHealInstance = new MobEffectInstance(
-                        regenerationHolder,
-                        durationInTicks,
-                        amplifier,
-                        false,
-                        true
-                );
+                MobEffectInstance newHealInstance = new MobEffectInstance(regenerationHolder, duration, amplifier, false, true);
                 target.addEffect(newHealInstance);
             }
 
@@ -207,7 +196,8 @@ public class MagicianAbility implements IAbility {
                         level.setBlock(wallPos, wallBlock, 3);
 
                         // [수정 8] try-catch 제거, 내부 WallTickHandler 직접 호출
-                        WallTickHandler.scheduleWallRemoval(level, wallPos, 3 * 20);
+                        int duration = Config.magician_earth_dur * 20;
+                        WallTickHandler.scheduleWallRemoval(level, wallPos, duration);
                         wallCount++;
                     }
                 }
