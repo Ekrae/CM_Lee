@@ -1,5 +1,6 @@
 package com.example.examplemod.abilities.abilitySet;
 
+import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -40,7 +41,7 @@ public class KingslayerAbility implements IAbility {
         ServerLevel level = (ServerLevel) caster.level();
 
         // 1. 대상 탐색 (범위 5)
-        double maxDistanceSqr = 5.0 * 5.0;
+        double maxDistanceSqr = Config.kslayerRange * Config.kslayerRange;
         ServerPlayer closestTarget = null;
         double closestDistSqr = Double.MAX_VALUE;
 
@@ -90,7 +91,7 @@ public class KingslayerAbility implements IAbility {
             } else {
                 // [B] 대상이 'pol'이 아닌 (도망자)
                 healAmount = 3.0F; // 1.5하트
-                float damage = 6.0F; // 3하트 데미지
+                float damage = (float) Config.kslayerDamageRunner; // 3하트 데미지
 
                 closestTarget.hurt(caster.damageSources().playerAttack(caster), damage);
 

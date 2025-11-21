@@ -16,7 +16,22 @@ import java.util.stream.Collectors;
 // Demonstrates how to use Forge's config APIs
 @Mod.EventBusSubscriber(modid = ExampleMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
+    // KingslayerAbility 설정을 위한 ConfigValue 추가
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+
+    private static final ForgeConfigSpec.DoubleValue KSLAYER_RANGE = BUILDER
+            .comment("Kingslayer ability search radius in blocks")
+            .defineInRange("kingslayerRange", 5.0, 1.0, 100.0);
+
+    private static final ForgeConfigSpec.DoubleValue KSLAYER_DAMAGE_RUNNER = BUILDER
+            .comment("Kingslayer damage dealt to non-pol targets (Runners)")
+            .defineInRange("kingslayerDamageRunner", 6.0, 0.0, 50.0);
+
+    // public static 접근 변수 선언
+    public static double kslayerRange;
+    public static double kslayerDamageRunner;
+
+
 
     private static final ForgeConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER
             .comment("Whether to log the dirt block on common setup")
@@ -46,11 +61,17 @@ public class Config {
         return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(ResourceLocation.tryParse(itemName));
     }
 
+
+
+
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         logDirtBlock = LOG_DIRT_BLOCK.get();
         magicNumber = MAGIC_NUMBER.get();
         magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
+        // [신규 로딩] Kingslayer 능력치 로딩
+        kslayerRange = KSLAYER_RANGE.get();
+        kslayerDamageRunner = KSLAYER_DAMAGE_RUNNER.get();
 
         // convert the list of strings into a set of items
         items = ITEM_STRINGS.get().stream()
