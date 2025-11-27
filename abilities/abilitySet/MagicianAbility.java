@@ -5,19 +5,17 @@ import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-// [수정 1] SmallFireball 대신 LargeFireball import
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -28,35 +26,21 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
-
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-// [참고] WallTickHandler가 이제 이 파일 내부에 중첩 클래스로 포함됩니다.
 
 public class MagicianAbility implements IAbility {
 
     // --- 각 마법의 촉매 아이템 정의 ---
-    // [수정 2] 사용자님의 파일(MagicianAbility.java)을 존중하여 RED_CANDLE 사용
     private static final Item FIRE_CATALYST = Items.RED_CANDLE;
     private static final Item WIND_CATALYST = Items.FEATHER;
     private static final Item EARTH_CATALYST = Items.DIRT;
-    private static final Item WATER_CATALYST = Items.NAUTILUS_SHELL;
-
-    // --- 각 마법의 쿨타임 (초) ---
-    private static final int FIRE_COOLDOWN_SEC = 8;
-    private static final int WIND_COOLDOWN_SEC = 10;
-    private static final int EARTH_COOLDOWN_SEC = 15;
-    private static final int WATER_COOLDOWN_SEC = 20;
-
-
-    @Override
-    public Component getDescription() {
-        return Component.literal("왼손의 촉매에 따라 4원소(불,바람,땅,물) 마법을 사용합니다.");
-    }
+    private static final Item LIGHTNING_CATALYST = Items.COPPER_INGOT;
 
     @Override
     public ResourceLocation getId() {
@@ -70,115 +54,85 @@ public class MagicianAbility implements IAbility {
 
     @Override
     public int getCooldownSeconds() {
-        // 기본 쿨타임 8초
-        return Config.magician_fire_cd;
+        return Config.magician_fire_cd; // 기본 쿨타임
+    }
+
+    @Override
+    public Component getDescription() {
+        return Component.literal("왼손의 촉매(양초, 깃털, 흙, 구리)에 따라 4원소 마법을 사용합니다.");
     }
 
     @Override
     public void execute(ServerPlayer player) {
         ItemStack offHandStack = player.getOffhandItem();
-        Level level = player.level();
-        long currentTime = level.getGameTime();
-
-        // (이제 AbilityEvents.java가 수정되었으므로 이 로직은 의도대로 작동합니다)
+        long currentTime = player.level().getGameTime();
 
         // 1. 불 마법
         if (offHandStack.is(FIRE_CATALYST)) {
             FireSpell.cast(player);
-            // 8초 쿨타임 (기본 쿨타임이므로 AbilityEvents가 자동 적용)
-
-            // 2. 바람 마법
-        } else if (offHandStack.is(WIND_CATALYST)) {
+            // 기본 쿨타임 적용 (AbilityEvents가 처리)
+        }
+        // 2. 바람 마법
+        else if (offHandStack.is(WIND_CATALYST)) {
             WindSpell.cast(player);
-            // 10초 쿨타임 덮어쓰기
-            long newCooldownEndTick = currentTime + (Config.magician_wind_cd * 20L); // Config 사용
-            AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
-            // 3. 땅 마법
-        } else if (offHandStack.is(EARTH_CATALYST)) {
+            long newCooldown = currentTime + (Config.magician_wind_cd * 20L);
+            AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldown);
+        }
+        // 3. 땅 마법
+        else if (offHandStack.is(EARTH_CATALYST)) {
             boolean success = EarthSpell.cast(player);
             if (success) {
-                long newCooldownEndTick = currentTime + (Config.magician_earth_cd * 20L); // Config 사용
-                AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
+                long newCooldown = currentTime + (Config.magician_earth_cd * 20L);
+                AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldown);
             } else {
-                // 실패 시 쿨타임 0으로 초기화
                 AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), 0L);
             }
-
-            // 4. 물 마법
-        } else if (offHandStack.is(WATER_CATALYST)) {
-            WaterSpell.cast(player);
-            long newCooldownEndTick = currentTime + (Config.magician_water_cd * 20L); // Config 사용
-            AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldownEndTick);
-        } else { //촉매 X
-            // [수정 3] 힌트 메시지 수정 (RED_CANDLE)
-            player.sendSystemMessage(Component.literal("왼손에 속성 촉매(빨간 양초, 깃털, 흙, 앵무조개 껍데기)를 들어주세요."));
-            // 쿨타임 0으로 초기화
+        }
+        // 4. 번개 마법 (구리 주괴)
+        else if (offHandStack.is(LIGHTNING_CATALYST)) {
+            boolean success = LightningSpell.cast(player);
+            if (success) {
+                // [수정] Config의 번개 쿨타임 변수 사용
+                long newCooldown = currentTime + (Config.magician_lightning_cd * 20L);
+                AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), newCooldown);
+            } else {
+                AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), 0L);
+            }
+        }
+        // 5. 촉매 없음
+        else {
+            player.sendSystemMessage(Component.literal("왼손에 속성 촉매(양초, 깃털, 흙, 구리 주괴)를 들어주세요."));
             AbilityEvents.PLAYER_COOLDOWNS_END_TICK.put(player.getUUID(), 0L);
         }
     }
 
-    // --- 중첩 클래스 (1): 불 마법 ---
+    // --- [1] 불 마법 ---
     private static class FireSpell {
         static void cast(ServerPlayer player) {
             Level level = player.level();
             Vec3 look = player.getLookAngle();
-            double x = player.getX() + look.x;
-            double y = player.getEyeY() + look.y - 0.2;
-            double z = player.getZ() + look.z;
-
-            // [수정 4] 맵을 파괴하지 않는 LargeFireball (폭발 위력 0) 사용
             LargeFireball fireball = new LargeFireball(level, player, look, 0);
-            fireball.setPos(x, y, z);
+            fireball.setPos(player.getX() + look.x, player.getEyeY() + look.y - 0.2, player.getZ() + look.z);
             level.addFreshEntity(fireball);
 
-            // [수정 5] 소리 변경 (Ghast)
+            // [수정] TracerAbility 방식 (X,Y,Z)
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.GHAST_SHOOT, SoundSource.PLAYERS, 1.0F, 1.0F);
             player.sendSystemMessage(Component.literal("화염구 발사!"));
         }
     }
 
-    // --- 중첩 클래스 (2): 바람 마법 ---
+    // --- [2] 바람 마법 ---
     private static class WindSpell {
         static void cast(ServerPlayer player) {
             int duration = Config.magician_wind_dur * 20;
-            MobEffectInstance effectInstance = new MobEffectInstance(MobEffects.SPEED, duration, 0, false, true);
-            player.addEffect(effectInstance);
+            player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 0, false, true));
+            // [수정] TracerAbility 방식 (X,Y,Z)
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 1.5F);
-            player.sendSystemMessage(Component.literal("바람처럼 신속해집니다! (5초)"));
+            player.sendSystemMessage(Component.literal("바람처럼 신속해집니다!"));
         }
     }
 
-    // --- 중첩 클래스 (4): 물 마법 --- (순서 변경)
-    private static class WaterSpell {
-        @SuppressWarnings("resource")
-        static void cast(ServerPlayer caster) {
-            ServerLevel level = (ServerLevel) caster.level();
-            AABB searchArea = caster.getBoundingBox().inflate(4.0);
-            List<ServerPlayer> targets = level.getEntitiesOfClass(ServerPlayer.class, searchArea);
-
-            Holder<MobEffect> regenerationHolder = MobEffects.REGENERATION;
-            int duration = Config.magician_water_dur * 20;
-            int amplifier = 0; // 재생 I
-
-            for (ServerPlayer target : targets) {
-                // (1.21.8 방식)
-                MobEffectInstance newHealInstance = new MobEffectInstance(regenerationHolder, duration, amplifier, false, true);
-                target.addEffect(newHealInstance);
-            }
-
-            // (X,Y,Z 방식)
-            level.playSound(null,
-                    caster.getX(), caster.getY(), caster.getZ(),
-                    SoundEvents.GENERIC_DRINK,
-                    SoundSource.PLAYERS,
-                    1.0f,
-                    1.0f);
-            level.sendParticles(ParticleTypes.HEART, caster.getX(), caster.getY() + 1.0, caster.getZ(), 20, 0.5, 0.5, 0.5, 0.1);
-            caster.sendSystemMessage(Component.literal("주변 " + targets.size() + "명에게 3초간 재생 효과를 부여합니다!"));
-        }
-    }
-
-    // --- 중첩 클래스 (3): 땅 마법 ---
+    // --- [3] 땅 마법 ---
     private static class EarthSpell {
         static boolean cast(ServerPlayer player) {
             ServerLevel level = (ServerLevel) player.level();
@@ -187,15 +141,12 @@ public class MagicianAbility implements IAbility {
             BlockState wallBlock = Blocks.COARSE_DIRT.defaultBlockState();
             int wallCount = 0;
 
-            // [수정 6] 3x2 크기
+            // 5x2 벽 생성
             for (int y = 0; y < 2; y++) {
-                for (int i = 0; i < 5; i++) { // 5
-                    // [수정 7] 5블록 중앙 정렬 (i-2 -> i-2)
+                for (int i = 0; i < 5; i++) {
                     BlockPos wallPos = startPos.relative(facing.getClockWise(), i - 2).above(y);
                     if (level.getBlockState(wallPos).canBeReplaced()) {
                         level.setBlock(wallPos, wallBlock, 3);
-
-                        // [수정 8] try-catch 제거, 내부 WallTickHandler 직접 호출
                         int duration = Config.magician_earth_dur * 20;
                         WallTickHandler.scheduleWallRemoval(level, wallPos, duration);
                         wallCount++;
@@ -204,11 +155,9 @@ public class MagicianAbility implements IAbility {
             }
 
             if (wallCount > 0) {
-                // [수정 9] playSound (X,Y,Z) 방식
+                // [수정] TracerAbility 방식 (X,Y,Z - BlockPos 중심 좌표 계산)
                 level.playSound(null, startPos.getX() + 0.5, startPos.getY() + 0.5, startPos.getZ() + 0.5, SoundEvents.STONE_PLACE, SoundSource.PLAYERS, 1.0F, 1.0F);
-                BlockParticleOption particle = new BlockParticleOption(ParticleTypes.BLOCK, wallBlock);
-                level.sendParticles(particle, startPos.getX() + 0.5, startPos.getY() + 1.0, startPos.getZ() + 0.5, 50, 1.5, 1.0, 1.5, 0.1);
-                player.sendSystemMessage(Component.literal("땅의 벽을 3초간 생성합니다!"));
+                player.sendSystemMessage(Component.literal("땅의 벽을 생성합니다!"));
                 return true;
             } else {
                 player.sendSystemMessage(Component.literal("벽을 생성할 공간이 없습니다."));
@@ -217,27 +166,91 @@ public class MagicianAbility implements IAbility {
         }
     }
 
-    // --- 중첩 클래스 (5): 땅 마법 타이머 ---
+    // --- [4] 번개 마법 ---
+    private static class LightningSpell {
+        static boolean cast(ServerPlayer player) {
+            ServerLevel level = (ServerLevel) player.level();
+            double range = 15.0;
+            AABB searchArea = player.getBoundingBox().inflate(range);
+
+            List<ServerPlayer> targets = level.getEntitiesOfClass(
+                    ServerPlayer.class, searchArea,
+                    p -> p != player && p.getTags().contains("pol")
+            );
+
+            if (targets.isEmpty()) {
+                targets = level.getEntitiesOfClass(
+                        ServerPlayer.class, searchArea, p -> p != player
+                );
+            }
+
+            if (targets.isEmpty()) {
+                player.sendSystemMessage(Component.literal("범위 내에 대상이 없습니다."));
+                return false;
+            }
+
+            ServerPlayer target = targets.get(0);
+            double closestDist = player.distanceToSqr(target);
+            for (ServerPlayer p : targets) {
+                double d = player.distanceToSqr(p);
+                if (d < closestDist) {
+                    closestDist = d;
+                    target = p;
+                }
+            }
+
+            // 1차 타격
+            applyLightningStrike(level, target);
+            player.sendSystemMessage(Component.literal(target.getName().getString() + "에게 번개를 떨어뜨립니다!"));
+
+            // 2차 타격 예약
+            LightningTickHandler.scheduleSecondStrike(target.getUUID(), 10);
+
+            return true;
+        }
+
+        static void applyLightningStrike(ServerLevel level, ServerPlayer target) {
+            LightningBolt lightning = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
+            lightning.setPos(target.getX(), target.getY(), target.getZ());
+            lightning.setVisualOnly(true);
+            level.addFreshEntity(lightning);
+
+            // 물리적 속도/가속도 제거 (순간 정지)
+            target.setDeltaMovement(0, target.getDeltaMovement().y, 0);
+            target.hurtMarked = true;
+            target.hasImpulse = true;
+
+            // 약한 스턴(이동속도 감소)
+            int stunDuration = Config.magician_lightning_stun_dur; // [수정] Config 사용
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, stunDuration, 2, false, false));
+
+            // 대미지
+            target.hurt(level.damageSources().lightningBolt(), 2.0f);
+
+            // [핵심 수정] playSound 오류 해결 (X,Y,Z 좌표 사용)
+            level.playSound(null,
+                    target.getX(), target.getY(), target.getZ(), // blockPosition() 대신 사용
+                    SoundEvents.TRIDENT_THUNDER,
+                    SoundSource.PLAYERS,
+                    1.0F,
+                    1.0F);
+        }
+    }
+
+    // --- 핸들러 1: 땅 마법 ---
     @Mod.EventBusSubscriber(modid = ExampleMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class WallTickHandler {
-
         private static final Map<BlockPos, Long> wallBlocks = new ConcurrentHashMap<>();
         private static ServerLevel worldInstance = null;
 
         public static void scheduleWallRemoval(ServerLevel level, BlockPos pos, long durationTicks) {
-            if (worldInstance == null) {
-                worldInstance = level;
-            }
-            long endTime = level.getGameTime() + durationTicks;
-            wallBlocks.put(pos, endTime);
+            if (worldInstance == null) worldInstance = level;
+            wallBlocks.put(pos, level.getGameTime() + durationTicks);
         }
 
         @SubscribeEvent
         public static void onServerTick(TickEvent.ServerTickEvent event) {
-            if (wallBlocks.isEmpty() || worldInstance == null) {
-                return;
-            }
-
+            if (wallBlocks.isEmpty() || worldInstance == null) return;
             long currentTime = worldInstance.getGameTime();
             BlockState air = Blocks.AIR.defaultBlockState();
 
@@ -245,6 +258,44 @@ public class MagicianAbility implements IAbility {
                 if (currentTime >= entry.getValue()) {
                     if (worldInstance.getBlockState(entry.getKey()).is(Blocks.COARSE_DIRT)) {
                         worldInstance.setBlock(entry.getKey(), air, 3);
+                    }
+                    return true;
+                }
+                return false;
+            });
+        }
+    }
+
+    // --- 핸들러 2: 번개 2차 타격 ---
+    @Mod.EventBusSubscriber(modid = ExampleMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static class LightningTickHandler {
+        private static final Map<UUID, Long> pendingStrikes = new ConcurrentHashMap<>();
+        private static ServerLevel worldInstance = null;
+
+        public static void scheduleSecondStrike(UUID targetUuid, int delayTicks) {
+            if (worldInstance != null) {
+                pendingStrikes.put(targetUuid, worldInstance.getGameTime() + delayTicks);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onServerTick(TickEvent.ServerTickEvent event) {
+            if (event.getServer().overworld() != null) {
+                worldInstance = event.getServer().overworld();
+            }
+
+            if (pendingStrikes.isEmpty() || worldInstance == null) return;
+
+            long currentTime = worldInstance.getGameTime();
+            MinecraftServer server = event.getServer();
+
+            pendingStrikes.entrySet().removeIf(entry -> {
+                if (currentTime >= entry.getValue()) {
+                    ServerPlayer target = server.getPlayerList().getPlayer(entry.getKey());
+                    if (target != null && target.isAlive()) {
+                        // 2차 타격 실행
+                        LightningSpell.applyLightningStrike(worldInstance, target);
+                        target.sendSystemMessage(Component.literal("2차 충격!"));
                     }
                     return true;
                 }

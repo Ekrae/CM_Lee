@@ -24,7 +24,7 @@ public class BindEffect extends MobEffect {
         addAttributeModifier(
                 Attributes.MOVEMENT_SPEED, // <-- GENERIC_ 없음
                 SPEED_LOCK_ID,
-                -1.0,
+                -0.99,
                 AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
         );
 

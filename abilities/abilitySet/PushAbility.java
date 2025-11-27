@@ -35,13 +35,15 @@ public class PushAbility implements IAbility {
     }
     @Override
     public int getCooldownSeconds() {
-        return 10;
+        return Config.push_cooldown;
     }
 
     @Override
     public void execute(ServerPlayer player) {
         // 1. 기반 아이템을 '목검'으로 변경
         ItemStack customSword = new ItemStack(Items.WOODEN_SWORD);
+        // [수정] 최대 내구도를 2로 설정 (2번 치면 부서짐)
+        customSword.set(DataComponents.MAX_DAMAGE, 2);
         double knockback = Config.push_strength;
         // 2. 아이템에 부여할 속성 정의
         ItemAttributeModifiers attributeModifiers = ItemAttributeModifiers.builder()
@@ -56,13 +58,12 @@ public class PushAbility implements IAbility {
                         ),
                         EquipmentSlotGroup.MAINHAND
                 )
-
                 // [속성 B] 공격 데미지 제거 속성 (신규)
                 .add(
                         Attributes.ATTACK_DAMAGE, // 공격 데미지
                         new AttributeModifier(
                                 ResourceLocation.fromNamespaceAndPath(ExampleMod.MODID, "remove_damage"),
-                                -0.99, // -100%
+                                -0.9, // -100%
                                 AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL // 최종값에 곱하기
                         ),
                         EquipmentSlotGroup.MAINHAND

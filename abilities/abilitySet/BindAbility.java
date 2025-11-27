@@ -2,6 +2,7 @@ package com.example.examplemod.abilities.abilitySet;
 
 import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
+import com.example.examplemod.effectSet.MobEffects;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -66,7 +67,7 @@ public class BindAbility implements IAbility {
 
         // --- [핵심 수정] ---
         // 1. ExampleMod에 등록된 커스텀 효과의 "상자(Holder)"를 가져옵니다.
-        Holder<MobEffect> bindEffectHolder = ExampleMod.BIND_EFFECT.getHolder().orElseThrow();
+        Holder<MobEffect> bindEffectHolder = MobEffects.BIND_EFFECT.getHolder().orElseThrow();
 
         for (ServerPlayer target : targets) {
             // 2. 이 "상자"로 효과 인스턴스를 만듭니다. (AttributeModifier 로직 완전 삭제)

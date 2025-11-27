@@ -62,12 +62,13 @@ public class Config {
     private static final ForgeConfigSpec.IntValue MAGICIAN_WIND_DURATION = BUILDER.comment("Magician Wind Duration").defineInRange("abilities.magician.wind.duration", 5, 1, 600);
     private static final ForgeConfigSpec.IntValue MAGICIAN_EARTH_COOLDOWN = BUILDER.comment("Magician Earth Cooldown").defineInRange("abilities.magician.earth.cooldown", 15, 0, 3600);
     private static final ForgeConfigSpec.IntValue MAGICIAN_EARTH_DURATION = BUILDER.comment("Magician Earth Wall Duration").defineInRange("abilities.magician.earth.duration", 3, 1, 600);
-    private static final ForgeConfigSpec.IntValue MAGICIAN_WATER_COOLDOWN = BUILDER.comment("Magician Water Cooldown").defineInRange("abilities.magician.water.cooldown", 20, 0, 3600);
-    private static final ForgeConfigSpec.IntValue MAGICIAN_WATER_DURATION = BUILDER.comment("Magician Water Regen Duration").defineInRange("abilities.magician.water.duration", 3, 1, 600);
+    // [수정] 물(Water) -> 번개(Lightning)
+    private static final ForgeConfigSpec.IntValue MAGICIAN_LIGHTNING_COOLDOWN = BUILDER.comment("Magician Lightning Cooldown").defineInRange("abilities.magician.lightning.cooldown", 20, 0, 3600);
+    private static final ForgeConfigSpec.IntValue MAGICIAN_LIGHTNING_STUN_DURATION = BUILDER.comment("Magician Lightning Stun Duration (ticks per hit)").defineInRange("abilities.magician.lightning.stun_duration", 15, 1, 100);
 
     // --- Push Ability ---
     private static final ForgeConfigSpec.IntValue PUSH_COOLDOWN = BUILDER.comment("Push Ability Cooldown (seconds)").defineInRange("abilities.push.cooldown", 10, 0, 3600);
-    private static final ForgeConfigSpec.DoubleValue PUSH_STRENGTH = BUILDER.comment("Push Knockback Strength").defineInRange("abilities.push.strength", 2.5, 0.1, 10.0);
+    private static final ForgeConfigSpec.DoubleValue PUSH_STRENGTH = BUILDER.comment("Push Knockback Strength").defineInRange("abilities.push.strength", 10, 0.1, 10.0);
 
     // --- Steal Ability ---
     private static final ForgeConfigSpec.IntValue STEAL_COOLDOWN = BUILDER.comment("Steal Ability Cooldown (seconds)").defineInRange("abilities.steal.cooldown", 30, 0, 3600);
@@ -111,7 +112,8 @@ public class Config {
     public static int kingslayer_cooldown;
     public static double kingslayer_range, kingslayer_pol_heal, kingslayer_pol_damage, kingslayer_runner_heal, kingslayer_runner_damage;
 
-    public static int magician_fire_cd, magician_wind_cd, magician_wind_dur, magician_earth_cd, magician_earth_dur, magician_water_cd, magician_water_dur;
+    public static int magician_fire_cd, magician_wind_cd, magician_wind_dur, magician_earth_cd, magician_earth_dur;
+    public static int magician_lightning_cd, magician_lightning_stun_dur;
 
     public static int push_cooldown;
     public static double push_strength;
@@ -168,8 +170,8 @@ public class Config {
         magician_wind_dur = MAGICIAN_WIND_DURATION.get();
         magician_earth_cd = MAGICIAN_EARTH_COOLDOWN.get();
         magician_earth_dur = MAGICIAN_EARTH_DURATION.get();
-        magician_water_cd = MAGICIAN_WATER_COOLDOWN.get();
-        magician_water_dur = MAGICIAN_WATER_DURATION.get();
+        magician_lightning_cd = MAGICIAN_LIGHTNING_COOLDOWN.get();
+        magician_lightning_stun_dur = MAGICIAN_LIGHTNING_STUN_DURATION.get();
 
         push_cooldown = PUSH_COOLDOWN.get();
         push_strength = PUSH_STRENGTH.get();

@@ -3,14 +3,9 @@ package com.example.examplemod;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import com.example.examplemod.effectSet.BindEffect;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectCategory;
-import com.example.examplemod.itemSet.PushSwordItem;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.api.distmarker.Dist;
@@ -39,10 +34,8 @@ import com.example.examplemod.abilities.abilitySet.IAbility;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlotGroup;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
+
+import static com.example.examplemod.effectSet.MobEffects.MOB_EFFECTS;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ExampleMod.MODID)
@@ -57,8 +50,9 @@ public final class ExampleMod {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     // Create a Deferred Register to hold CreativeModeTabs which will all be registered under the "examplemod" namespace
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-    //이펙트 등록
-    public static final DeferredRegister<MobEffect> MOB_EFFECTS = DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, MODID);
+    //이제 이펙트 이펙트 폴더에서 등록
+    //public static final DeferredRegister<MobEffect> MOB_EFFECTS = DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, MODID);
+
     // Creates a new Block with the id "examplemod:example_block", combining the namespace and path
     public static final RegistryObject<Block> EXAMPLE_BLOCK = BLOCKS.register("example_block",
             () -> new Block(BlockBehaviour.Properties.of()
@@ -66,63 +60,6 @@ public final class ExampleMod {
                     .mapColor(MapColor.STONE)
             )
     );
-    // Creates a new BlockItem with the id "examplemod:example_block", combining the namespace and path
-    // [핵심 수정] PUSH_SWORD 아이템 등록 로직
-    public static final RegistryObject<Item>
-            EXAMPLE_BLOCK_ITEM, EXAMPLE_ITEM;
-    static {
-        EXAMPLE_BLOCK_ITEM = ITEMS.register("example_block",
-                () -> new BlockItem(EXAMPLE_BLOCK.get(), new Item.Properties().setId(ITEMS.key("example_block")))
-        );
-        EXAMPLE_ITEM = ITEMS.register("example_item",
-                () -> new Item(new Item.Properties()
-                        .setId(ITEMS.key("example_item"))
-                        .food(new FoodProperties.Builder()
-                                .alwaysEdible()
-                                .nutrition(1)
-                                .saturationModifier(2f)
-                                .build()
-                        )
-                )
-        );
-//        PUSH_SWORD = ITEMS.register("push_sword", () -> {
-//            // 1. 사정거리 증가 속성을 먼저 정의합니다.
-//            ItemAttributeModifiers attributeModifiers = ItemAttributeModifiers.builder()
-//                    .add(
-//                            Attributes.ENTITY_INTERACTION_RANGE, // 사정거리 속성
-//                            new AttributeModifier(
-//                                    ResourceLocation.fromNamespaceAndPath(MODID, "push_reach"), // 고유 ID
-//                                    3.0, // 3블록 추가
-//                                    AttributeModifier.Operation.ADD_VALUE
-//                            ),
-//                            EquipmentSlotGroup.MAINHAND// 손에 들었을 때만 적용
-//                    )
-//                    .build();
-//            // 2. Item.Properties를 만들 때 위에서 정의한 속성을 .attributes()로 추가합니다.
-//            return new PushSwordItem(
-//                    new Item.Properties()
-//                            .stacksTo(1)
-//                            .rarity(Rarity.UNCOMMON)
-//                            .attributes(attributeModifiers) // <-- [수정] 여기서 속성 부여
-//            );
-//        });
-    }
-
-
-    // --- [새로운 커스텀 효과 등록] ---. 속박
-    public static final RegistryObject<MobEffect> BIND_EFFECT = MOB_EFFECTS.register("bind",
-            () -> new BindEffect(MobEffectCategory.HARMFUL, 0x4B5320) // 해로운 효과, 올리브색
-    );
-    // -----------------------------------
-
-    // Creates a creative tab with the id "examplemod:example_tab" for the example item, that is placed after the combat tab
-    public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
-            .withTabsBefore(CreativeModeTabs.COMBAT)
-            .icon(() -> EXAMPLE_ITEM.get().getDefaultInstance())
-            .displayItems((parameters, output) -> {
-                output.accept(EXAMPLE_ITEM.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
-            }).build());
-
     public ExampleMod(FMLJavaModLoadingContext context) {
         var modBusGroup = context.getModBusGroup();
 
@@ -160,8 +97,8 @@ public final class ExampleMod {
     // Add the example block item to the building blocks tab
     @SubscribeEvent
     private static void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS)
-            event.accept(EXAMPLE_BLOCK_ITEM);
+        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS){}
+            //event.accept(EXAMPLE_BLOCK_ITEM);
     }
     // --- [ 여기에 새 코드 추가 ] ---
 
