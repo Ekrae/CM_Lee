@@ -2,20 +2,22 @@ package com.example.examplemod.abilities.abilitySet;
 
 import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
+import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.RandomSource; // 월드의 랜덤 소스
-import net.minecraft.core.Holder;
 
 public class GamblerAbility implements IAbility {
 
-    final int durationInTicks = Config.gambler_duration;
+    // [삭제] 클래스 로딩 시점이 아닌 실행 시점에 Config 값을 가져와야 하므로 삭제
+    // final int durationInTicks = Config.gambler_duration * 20;
+
     @Override
     public ResourceLocation getId() {
         return ResourceLocation.fromNamespaceAndPath(ExampleMod.MODID, "gambler");
@@ -27,69 +29,74 @@ public class GamblerAbility implements IAbility {
     }
 
     @Override
-    public Component getDescription() {
-        return Component.literal("무작위 효과(신속,투명,재생,구속,발광) 중 하나를 얻습니다.");
-    }
-    @Override
     public int getCooldownSeconds() {
         return Config.gambler_cooldown;
     }
 
     @Override
+    public Component getDescription() {
+        return Component.literal("무작위 효과를 얻습니다. (성공: 투명/신속/재생, 실패: 발광/구속)");
+    }
+
+    @Override
     public void execute(ServerPlayer player) {
-        // --- 1. 효과 기본 설정 ---
-        // 10초
-        int amplifier = 0; // 1단계 효과 (0 = I, 1 = II)
-
-        // --- 2. 랜덤 굴리기 (0~4) ---
-        // player.level().getRandom()을 사용하는 것이 마인크래프트 표준 방식입니다.
-
+        // 1. 랜덤 굴리기 (0~4)
         RandomSource random = player.level().getRandom();
-        int roll = random.nextInt(5); // 0, 1, 2, 3, 4 중 하나가 나옴 (각 20% 확률)
+        int roll = random.nextInt(5);
 
-        Holder<MobEffect> effectType; // 적용할 효과
-        String effectName;      // 피드백 메시지에 쓸 효과 이름
+        Holder<MobEffect> effectType;
+        String effectName;
+        boolean isSuccess; // 성공 여부 체크
 
-        // --- 3. 결과에 따라 효과 결정 ---
+        // 2. 결과 판정
         switch (roll) {
             case 0:
                 effectType = MobEffects.INVISIBILITY;
                 effectName = "투명";
+                isSuccess = true;
                 break;
             case 1:
                 effectType = MobEffects.SPEED;
                 effectName = "신속";
+                isSuccess = true;
                 break;
             case 2:
                 effectType = MobEffects.GLOWING;
                 effectName = "발광";
+                isSuccess = false; // 꽝
                 break;
             case 3:
                 effectType = MobEffects.SLOWNESS;
                 effectName = "구속";
+                isSuccess = false; // 꽝
                 break;
             default: // case 4
                 effectType = MobEffects.REGENERATION;
                 effectName = "재생";
+                isSuccess = true;
                 break;
         }
 
-        // --- 4. 효과 인스턴스 생성 ---
-        // (참고: 투명 효과는 파티클을 false로 하는게 좋지만, 일관성을 위해 true로 둡니다)
+        // 3. 지속 시간 설정 (성공/실패에 따라 다르게)
+        int durationInSeconds = isSuccess ? Config.gambler_duration : Config.gambler_fail_duration;
+        int durationInTicks = durationInSeconds * 20;
+        int amplifier = 5; // 1단계 효과
+
+        // 4. 효과 적용
         MobEffectInstance effectInstance = new MobEffectInstance(
                 effectType,
                 durationInTicks,
                 amplifier,
-                false, // (Ambient) 주변 효과 여부
-                true   // (Show Particles) 파티클 표시 여부
+                false, // Ambient
+                true   // Show Particles
         );
-
-        // --- 5. 플레이어에게 효과 적용 ---
         player.addEffect(effectInstance);
 
-        // --- 6. 피드백 메시지 ---
-        player.displayClientMessage(Component.literal("도박 성공! '" + effectName + "' 효과 발동!"), true);
+        // 5. 피드백 메시지 (성공은 초록색, 실패는 빨간색)
+        if (isSuccess) {
+            player.displayClientMessage(Component.literal("§a도박 성공! §f'" + effectName + "' 효과 발동! (" + durationInSeconds + "초)"), true);
+        } else {
+            player.displayClientMessage(Component.literal("§c도박 실패... §f'" + effectName + "' 효과 발동... (" + durationInSeconds + "초)"), true);
+        }
     }
-
-
 }

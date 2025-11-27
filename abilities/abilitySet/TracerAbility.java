@@ -1,6 +1,5 @@
 package com.example.examplemod.abilities.abilitySet;
 
-// 1. 필요한 Import 문 정리
 import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import com.example.examplemod.abilityDataObject.PlayerStateSnapshot;
@@ -21,6 +20,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent; // [추가] 사망 이벤트
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -40,13 +40,14 @@ public class TracerAbility implements IAbility {
 
     @Override
     public Item getTriggerItem() {
-        return Items.CLOCK; // 트리거 아이템: 시계
+        return Items.CLOCK;
     }
 
     @Override
     public int getCooldownSeconds() {
         return Config.tracer_cooldown;
     }
+
     @Override
     public Component getDescription() {
         return Component.literal("3초 전의 위치, 체력, 시야각으로 되돌아갑니다.");
@@ -74,18 +75,32 @@ public class TracerAbility implements IAbility {
         private static final Set<UUID> REWINDING_PLAYERS = new HashSet<>();
         private static final int HISTORY_DURATION_TICKS = 3 * 20;
 
+        // --- [신규] 플레이어 사망 시 기록 초기화 ---
+        @SubscribeEvent
+        public static void onPlayerDeath(LivingDeathEvent event) {
+            if (event.getEntity() instanceof ServerPlayer player) {
+                // 죽으면 즉시 기록 삭제 (부활 후 죽은 위치로 역행하는 것 방지)
+                clearHistory(player);
+            }
+        }
+        // ---------------------------------------
+
         @SuppressWarnings("resource")
         @SubscribeEvent
         public static void onTick(TickEvent.PlayerTickEvent.Pre event) {
             if (event.player.level().isClientSide || !(event.player instanceof ServerPlayer serverPlayer)) {
                 return;
             }
+
+            // [추가 안전장치] 죽어있는 상태라면 기록하지 않음
+            if (serverPlayer.isDeadOrDying()) {
+                return;
+            }
+
             UUID uuid = serverPlayer.getUUID();
 
-            // [수정] 불필요한 history 변수 선언 제거
-
             if (REWINDING_PLAYERS.contains(uuid)) {
-                Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.get(uuid); // 여기서 한 번만 가져옴
+                Deque<PlayerStateSnapshot> history = PLAYER_HISTORY.get(uuid);
                 PlayerStateSnapshot targetFrame = null;
 
                 // 3배속 재생 루프
@@ -94,8 +109,6 @@ public class TracerAbility implements IAbility {
                         break;
                     }
                     targetFrame = history.removeLast();
-
-                    // [정리] 주석 처리된 파티클 코드 삭제
                 }
 
                 if (targetFrame != null) {
@@ -111,16 +124,10 @@ public class TracerAbility implements IAbility {
                         serverPlayer.setHealth(targetFrame.health());
                         serverPlayer.level().playSound(null, targetFrame.position().x, targetFrame.position().y, targetFrame.position().z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.2F);
                         REWINDING_PLAYERS.remove(uuid);
-
-                        // [수정] Holder 타입을 사용하도록 .get() 추가
                         serverPlayer.removeEffect(MobEffects.INVISIBILITY);
-                    } else {
-                        // [수정] 역행 중간 소리가 너무 시끄러울 수 있어 주석 처리 (필요하면 해제)
-                        // serverPlayer.level().playSound(null, targetFrame.position().x, targetFrame.position().y, targetFrame.position().z, SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.3F, 2.0F);
                     }
                 } else {
                     REWINDING_PLAYERS.remove(uuid);
-                    // [수정] Holder 타입을 사용하도록 .get() 추가
                     serverPlayer.removeEffect(MobEffects.INVISIBILITY);
                 }
             } else {
@@ -142,18 +149,15 @@ public class TracerAbility implements IAbility {
 
         @SuppressWarnings("resource")
         public static void startRewind(ServerPlayer player) {
-            // [수정] 추가하기 전에 '먼저' 확인해야 함
             if (REWINDING_PLAYERS.contains(player.getUUID()) || !PLAYER_HISTORY.containsKey(player.getUUID()) || PLAYER_HISTORY.get(player.getUUID()).isEmpty()) {
-                return; // 이미 역행 중이거나 기록이 없으면 중단
+                return;
             }
 
-            // [수정] 로직 순서 변경: 확인 후 상태 변경
             REWINDING_PLAYERS.add(player.getUUID());
 
             Level level = player.level();
             Vec3 currentPos = player.position();
 
-            // [수정] Holder 타입을 사용하도록 .get() 추가
             Holder<MobEffect> nausea = MobEffects.NAUSEA;
             Holder<MobEffect> blindness = MobEffects.BLINDNESS;
             Holder<MobEffect> invisibility = MobEffects.INVISIBILITY;
@@ -164,7 +168,6 @@ public class TracerAbility implements IAbility {
 
             level.playSound(null, currentPos.x, currentPos.y, currentPos.z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
 
-            // 첫 프레임 파티클 (정상)
             if (level instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(
                         ParticleTypes.END_ROD,

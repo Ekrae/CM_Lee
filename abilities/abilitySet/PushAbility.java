@@ -63,7 +63,7 @@ public class PushAbility implements IAbility {
                         Attributes.ATTACK_DAMAGE, // 공격 데미지
                         new AttributeModifier(
                                 ResourceLocation.fromNamespaceAndPath(ExampleMod.MODID, "remove_damage"),
-                                -0.9, // -100%
+                                -0.99, // -100%
                                 AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL // 최종값에 곱하기
                         ),
                         EquipmentSlotGroup.MAINHAND

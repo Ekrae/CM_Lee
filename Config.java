@@ -35,7 +35,8 @@ public class Config {
     // --- Gambler Ability ---
     private static final ForgeConfigSpec.IntValue GAMBLER_COOLDOWN = BUILDER.comment("Gambler Ability Cooldown (seconds)").defineInRange("abilities.gambler.cooldown", 5, 0, 3600);
     private static final ForgeConfigSpec.IntValue GAMBLER_DURATION = BUILDER.comment("Gambler Effect Duration (seconds)").defineInRange("abilities.gambler.duration", 10, 1, 600);
-
+    // [추가] 실패 시 지속 시간 설정
+    private static final ForgeConfigSpec.IntValue GAMBLER_FAIL_DURATION = BUILDER.comment("Gambler Failure Duration (seconds)").defineInRange("abilities.gambler.fail_duration", 5, 1, 600);
     // --- Hack Ability (기존 + 신규 실명 설정) ---
     private static final ForgeConfigSpec.IntValue HACK_COOLDOWN = BUILDER.comment("Hack Tag Removal Cooldown (seconds)").defineInRange("abilities.hack.cooldown", 20, 0, 3600);
     private static final ForgeConfigSpec.IntValue HACK_DURATION = BUILDER.comment("Hack Tag Removal Duration (seconds)").defineInRange("abilities.hack.duration", 5, 1, 600);
@@ -68,7 +69,7 @@ public class Config {
 
     // --- Push Ability ---
     private static final ForgeConfigSpec.IntValue PUSH_COOLDOWN = BUILDER.comment("Push Ability Cooldown (seconds)").defineInRange("abilities.push.cooldown", 10, 0, 3600);
-    private static final ForgeConfigSpec.DoubleValue PUSH_STRENGTH = BUILDER.comment("Push Knockback Strength").defineInRange("abilities.push.strength", 10, 0.1, 10.0);
+    private static final ForgeConfigSpec.DoubleValue PUSH_STRENGTH = BUILDER.comment("Push Knockback Strength").defineInRange("abilities.push.strength", 20, 0.1, 30.0);
 
     // --- Steal Ability ---
     private static final ForgeConfigSpec.IntValue STEAL_COOLDOWN = BUILDER.comment("Steal Ability Cooldown (seconds)").defineInRange("abilities.steal.cooldown", 30, 0, 3600);
@@ -100,7 +101,7 @@ public class Config {
 
     public static int fireball_cooldown;
 
-    public static int gambler_cooldown, gambler_duration;
+    public static int gambler_cooldown, gambler_duration,gambler_fail_duration;
 
     public static int hack_cooldown, hack_duration;
     // [신규] 해커 실명 변수
@@ -147,6 +148,7 @@ public class Config {
 
         gambler_cooldown = GAMBLER_COOLDOWN.get();
         gambler_duration = GAMBLER_DURATION.get();
+        gambler_fail_duration = GAMBLER_FAIL_DURATION.get();
 
         hack_cooldown = HACK_COOLDOWN.get();
         hack_duration = HACK_DURATION.get();
