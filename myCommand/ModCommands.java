@@ -17,7 +17,9 @@ import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -32,7 +34,6 @@ public class ModCommands {
     public static final String EXCLUDE_TAG = "exclude_ability";
     private static final Random random = new Random();
 
-    // 능력 ID 자동완성
     private static final SuggestionProvider<CommandSourceStack> ABILITY_SUGGESTIONS = (context, builder) -> {
         AbilityRegistry.getAbilityIds().stream()
                 .map(ResourceLocation::toString)
@@ -48,44 +49,59 @@ public class ModCommands {
     }
 
     // =================================================================================
-    //                      1. /ability 명령어 (기존 유지)
+    //                      1. /ability 명령어
     // =================================================================================
     private static void registerAbilityCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("ability")
+                // set
                 .then(Commands.literal("set")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("target", EntityArgument.player())
                                 .then(Commands.argument("ability_id", ResourceLocationArgument.id())
                                         .suggests(ABILITY_SUGGESTIONS)
                                         .executes(ModCommands::executeAbilitySet))))
+                // get
                 .then(Commands.literal("get")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("target", EntityArgument.player())
                                 .executes(ModCommands::executeAbilityGet)))
+                // clear
                 .then(Commands.literal("clear")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("target", EntityArgument.player())
                                 .executes(ModCommands::executeAbilityClear)))
+                // list
                 .then(Commands.literal("list")
                         .executes(ModCommands::executeAbilityList))
+                // help
                 .then(Commands.literal("help")
                         .executes(ModCommands::executeAbilityHelpList)
                         .then(Commands.argument("ability_id", ResourceLocationArgument.id())
                                 .suggests(ABILITY_SUGGESTIONS)
                                 .executes(ModCommands::executeAbilityHelpDetail)))
+
+                // [신규] giveitems: 능력 아이템 지급
+                .then(Commands.literal("giveitems")
+                        .requires(source -> source.hasPermission(2))
+                        // 인자 없으면: exclude 태그 없는 모든 플레이어 대상
+                        .executes(ctx -> executeGiveItems(ctx, null))
+                        // 인자 있으면: 지정된 플레이어 대상
+                        .then(Commands.argument("targets", EntityArgument.players())
+                                .executes(ctx -> executeGiveItems(ctx, EntityArgument.getPlayers(ctx, "targets")))
+                        )
+                )
         );
     }
 
+    // --- (set, get, clear, list, help 메서드들은 기존과 동일) ---
     private static int executeAbilitySet(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer target = EntityArgument.getPlayer(context, "target");
         ResourceLocation abilityId = ResourceLocationArgument.getId(context, "ability_id");
         IAbility ability = AbilityRegistry.get(abilityId);
-
         if (ability == null) {
             context.getSource().sendFailure(Component.literal("존재하지 않는 능력 ID입니다: " + abilityId));
             return 0;
         }
-
         AbilityEvents.setPlayerAbility(target, ability);
         context.getSource().sendSuccess(() -> Component.literal(target.getName().getString() + "의 능력을 " + abilityId + "(으)로 설정했습니다."), true);
         return 1;
@@ -94,7 +110,6 @@ public class ModCommands {
     private static int executeAbilityGet(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer target = EntityArgument.getPlayer(context, "target");
         IAbility ability = AbilityEvents.getPlayerAbility(target);
-
         if (ability != null) {
             context.getSource().sendSuccess(() -> Component.literal(target.getName().getString() + "의 현재 능력: " + ability.getId().toString()), false);
         } else {
@@ -138,16 +153,13 @@ public class ModCommands {
         CommandSourceStack source = context.getSource();
         ResourceLocation abilityId = ResourceLocationArgument.getId(context, "ability_id");
         IAbility ability = AbilityRegistry.get(abilityId);
-
         if (ability == null) {
             source.sendFailure(Component.literal("능력을 찾을 수 없습니다: " + abilityId));
             return 0;
         }
-
         ItemStack triggerStack = new ItemStack(ability.getTriggerItem());
         Component itemName = triggerStack.getHoverName();
         String itemId = ForgeRegistries.ITEMS.getKey(ability.getTriggerItem()).toString();
-
         net.minecraft.network.chat.MutableComponent info = Component.literal("")
                 .append(Component.literal("--- 능력: ").withStyle(net.minecraft.ChatFormatting.WHITE))
                 .append(Component.literal(ability.getId().getPath()).withStyle(net.minecraft.ChatFormatting.GOLD))
@@ -161,30 +173,78 @@ public class ModCommands {
                 .append(Component.literal("\n"))
                 .append(Component.literal("  효  과: ").withStyle(net.minecraft.ChatFormatting.GRAY))
                 .append(ability.getDescription().copy().withStyle(net.minecraft.ChatFormatting.WHITE));
-
         source.sendSuccess(() -> info, false);
         return 1;
     }
 
-    // =================================================================================
-    //                 2. /randomizeabilities 명령어 (확장됨)
-    // =================================================================================
+    // --- [신규 구현] executeGiveItems ---
+    private static int executeGiveItems(CommandContext<CommandSourceStack> context, Collection<ServerPlayer> explicitTargets) {
+        CommandSourceStack source = context.getSource();
+        List<ServerPlayer> targets;
 
+        // 대상 선정: 인자 없으면 exclude 태그 없는 전원, 있으면 지정된 인원
+        if (explicitTargets == null) {
+            targets = source.getServer().getPlayerList().getPlayers().stream()
+                    .filter(player -> !player.getTags().contains(EXCLUDE_TAG))
+                    .collect(Collectors.toList());
+        } else {
+            targets = new ArrayList<>(explicitTargets);
+        }
+
+        if (targets.isEmpty()) {
+            source.sendFailure(Component.literal("아이템을 지급할 대상이 없습니다."));
+            return 0;
+        }
+
+        int count = 0;
+        for (ServerPlayer player : targets) {
+            IAbility ability = AbilityEvents.getPlayerAbility(player);
+            if (ability != null) {
+                // 1. 기본 트리거 아이템 지급
+                giveItem(player, ability.getTriggerItem());
+
+                // 2. 마법사(Magician) 추가 아이템: 촉매 4종
+                if (ability.getId().equals(AbilityRegistry.MAGICIAN.getId())) {
+                    giveItem(player, Items.RED_CANDLE);     // 불
+                    giveItem(player, Items.FEATHER);        // 바람
+                    giveItem(player, Items.DIRT);           // 땅
+                    giveItem(player, Items.COPPER_INGOT);   // 번개
+                }
+
+                // 3. 해커(Hack) 추가 아이템: 먹물 주머니
+                if (ability.getId().equals(AbilityRegistry.HACK.getId())) {
+                    giveItem(player, Items.INK_SAC); // 실명 촉매
+                }
+
+                count++;
+            }
+        }
+        // [수정] 람다식 사용을 위해 '사실상 final'인 새 변수에 값을 복사합니다.
+        int finalCount = count;
+
+        source.sendSuccess(() -> Component.literal(finalCount + "명에게 능력 아이템을 지급했습니다."), true);
+        return count;
+    }
+
+    // 아이템 지급 헬퍼 메서드
+    private static void giveItem(ServerPlayer player, Item item) {
+        ItemStack stack = new ItemStack(item);
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+    }
+
+    // =================================================================================
+    //                 2. /randomizeabilities 명령어
+    // =================================================================================
     private static void registerRandomizeCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
-        // 기본: /ra (중복불가, 전체대상, 제외없음)
         dispatcher.register(Commands.literal("randomizeabilities")
                 .requires(source -> source.hasPermission(2))
                 .executes(ctx -> executeRandomize(ctx, false, null, ""))
-
-                // 옵션 1: /ra [중복허용]
                 .then(Commands.argument("allow_duplicates", BoolArgumentType.bool())
                         .executes(ctx -> executeRandomize(ctx, BoolArgumentType.getBool(ctx, "allow_duplicates"), null, ""))
-
-                        // 옵션 2: /ra [중복허용] [대상]
                         .then(Commands.argument("targets", EntityArgument.players())
                                 .executes(ctx -> executeRandomize(ctx, BoolArgumentType.getBool(ctx, "allow_duplicates"), EntityArgument.getPlayers(ctx, "targets"), ""))
-
-                                // 옵션 3: /ra [중복허용] [대상] [제외할능력(문자열)]
                                 .then(Commands.argument("excluded_abilities", StringArgumentType.greedyString())
                                         .executes(ctx -> executeRandomize(ctx, BoolArgumentType.getBool(ctx, "allow_duplicates"), EntityArgument.getPlayers(ctx, "targets"), StringArgumentType.getString(ctx, "excluded_abilities")))
                                 )
@@ -192,7 +252,6 @@ public class ModCommands {
                 )
         );
 
-        // 약어 /ra 등록 (동일 구조)
         dispatcher.register(Commands.literal("ra")
                 .requires(source -> source.hasPermission(2))
                 .executes(ctx -> executeRandomize(ctx, false, null, ""))
@@ -210,29 +269,23 @@ public class ModCommands {
 
     private static int executeRandomize(CommandContext<CommandSourceStack> context, boolean allowDuplicates, Collection<ServerPlayer> targets, String excludedAbilitiesStr) {
         CommandSourceStack source = context.getSource();
-
-        // 1. 모든 능력 가져오기
         List<IAbility> availableAbilities = AbilityRegistry.getAbilityIds().stream()
                 .map(AbilityRegistry::get)
                 .collect(Collectors.toList());
 
-        // 2. 제외할 능력 필터링
         if (!excludedAbilitiesStr.isEmpty()) {
             String[] excludedIds = excludedAbilitiesStr.split(",");
             for (String exId : excludedIds) {
                 ResourceLocation id = ResourceLocation.tryParse(exId.trim());
-                if (id != null) {
-                    availableAbilities.removeIf(ab -> ab.getId().equals(id));
-                }
+                if (id != null) availableAbilities.removeIf(ab -> ab.getId().equals(id));
             }
         }
 
         if (availableAbilities.isEmpty()) {
-            source.sendFailure(Component.literal("사용 가능한 능력이 없습니다! (모두 제외됨)"));
+            source.sendFailure(Component.literal("사용 가능한 능력이 없습니다!"));
             return 0;
         }
 
-        // 3. 대상 플레이어 설정 (인자가 없으면 기본 로직: exclude 태그 없는 사람)
         List<ServerPlayer> targetPlayers;
         if (targets == null) {
             targetPlayers = source.getServer().getPlayerList().getPlayers().stream()
@@ -247,29 +300,19 @@ public class ModCommands {
             return 0;
         }
 
-        // 4. 능력 분배 로직
         if (!allowDuplicates && availableAbilities.size() < targetPlayers.size()) {
-            source.sendFailure(Component.literal("오류: 플레이어 수(" + targetPlayers.size() + ")보다 사용 가능한 능력(" + availableAbilities.size() + ")이 적습니다. '중복 허용'을 켜거나 제외 능력을 줄이세요."));
+            source.sendFailure(Component.literal("오류: 인원 수보다 능력 수가 적습니다."));
             return 0;
         }
 
-        // 중복 불가의 경우 섞어서 순서대로 지급
-        if (!allowDuplicates) {
-            Collections.shuffle(availableAbilities);
-        }
+        if (!allowDuplicates) Collections.shuffle(availableAbilities);
 
         int assignedCount = 0;
         for (int i = 0; i < targetPlayers.size(); i++) {
             ServerPlayer player = targetPlayers.get(i);
-            IAbility selectedAbility;
-
-            if (allowDuplicates) {
-                // 중복 허용: 매번 랜덤 뽑기
-                selectedAbility = availableAbilities.get(random.nextInt(availableAbilities.size()));
-            } else {
-                // 중복 불가: 섞은 리스트에서 하나씩 가져오기
-                selectedAbility = availableAbilities.get(i);
-            }
+            IAbility selectedAbility = allowDuplicates ?
+                    availableAbilities.get(random.nextInt(availableAbilities.size())) :
+                    availableAbilities.get(i);
 
             AbilityEvents.setPlayerAbility(player, selectedAbility);
             player.displayClientMessage(Component.literal("당신의 능력은 [" + selectedAbility.getId().getPath() + "] 입니다!"), true);
@@ -277,10 +320,7 @@ public class ModCommands {
         }
 
         source.getServer().getPlayerList().broadcastSystemMessage(
-                Component.literal("§6[시스템] §f" + assignedCount + "명의 능력 설정 완료! (중복: " + (allowDuplicates ? "O" : "X") + ")"),
-                false
-        );
-
+                Component.literal("§6[시스템] §f" + assignedCount + "명의 능력 설정 완료!"), false);
         return assignedCount;
     }
 }
